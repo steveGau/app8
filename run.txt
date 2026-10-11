@@ -1,0 +1,2216 @@
+########
+I have an python app "processExcel.py" and "processExcel.bat" developed at other computer
+1. I copy this app to C:\Users\a2907\Desktop\app8
+2. could you make this app work at this computer at C:\Users\a2907\Desktop\app8
+
+########
+https://cursor.com/loginDeepGrokBot
+open Grok Bot
+
+########
+develop a python app for PC machine to read and process excel files "processExcel.py"
+0. the example files for code development is at folder "C:\Users\User\Downloads\test", there are 4 Excel files: 20261004.xlsx,20261005.xlsx,20261006.xlsx,20261007.xlsx
+1. a GUI to get a folder which have Excel files with name 
+1.1 file name example "20261004.xlsx" or "year,month, date", year=2026,month=10, date=04
+1.2 code to get all excel files name in the selected folder and sort every file by "year, month, date"
+1.3 got to every sheet in every excel file and extract data
+1.4 create a new Excel file (Extract.xlsx)
+2. extarct data at sheet:
+2.1 sheet "運動" 
+2.2 extract data at Column A "選擇運動 Pilih olahraga" from row 1 to a row above chacter "?" and set "nrow" use the last row number
+2.3 get data from row at column C, E, G, I, K or "運動日期 Tanggal Olahraga","開始時間 Waktu mulai","結束時間 Waktu berakhir","運動時間 Waktu berolahraga","運動距離 Jarak pergerakan"
+where column "I" = column "G" - column "E" with date format hh:mm:sec
+extract column "K" = column "G" - column "E"
+parse data for column K, "運動距離"
+5米: 5 meter
+10米: 10 meter
+15米: 15 meter
+20米: 20 meter
+25米: 25 meter
+30米: 30 meter
+35米: 35 meter
+40米: 40 meter
+you need to parse 10 from "10米: 10 meter"
+2.3.1 want to get data at Column A, B, I, K
+2.3.2 In Column I, Convert hh:mm:sec to mm
+2.3.3 In Column K, parse data from "10米: 10 meter" to 10 with unit "米"
+2.3.4 
+create a sheet "運動"
+for the 1st input excel file 
+save data in Column A "選擇運動 Pilih olahraga", to column 1, at sheet "運動" and keep title at "A1"
+save data in Column C "運動日期 Tanggal Olahraga", to column 2 at sheet "運動" at "C1"
+save converted data from Column I "運動時間 Waktu berolahraga", to column 3 at sheet "運動" at "I1"
+save converted data from Column K "運動距離 Jarak pergerakan", to column 4 at sheet "運動" at "K1"
+for the 2nd input excel file 
+save data in Column A "選擇運動 Pilih olahraga", to column 1+4 at sheet "運動"
+save data in Column C "運動日期 Tanggal Olahraga", to column 2+4 at sheet "運動"
+save converted data from Column I "運動時間 Waktu berolahraga", to column 3+4 at sheet "運動"
+save converted data from Column K "運動距離 Jarak pergerakan", to column 4+4 at sheet "運動"
+and so on
+2.4 
+create a sheet "運動 Plot"
+2.4.1
+create xy plot "運動時間"
+for the 1st curve "運動時間"
+plot "運動時間" data in Column 3,3+4,3+2*4,3+4*4 in sheet "運動"
+for the plot "運動時間"
+1st xy curve: plot y v.s x, y="運動時間 Waktu berolahraga", x="1,2,3,4...", with title "運動時間", ylabel ="運動時間", xlabel="1:n", legend="運動日期"
+2nd xy curve: plot y v.s x, y="運動時間 Waktu berolahraga", x="1,2,3,4...", with title "運動時間", ylabel ="運動時間", xlabel="1:n", legend="運動日期"
+3rd....
+2.4.2
+create xy plot "運動距離"
+plot "運動距離" data in Column 4,4+4,4+2*4,4+4*4 in sheet "運動"
+for the plot "運動距離"
+1st xy curve: plot y v.s x, y="運動距離 Jarak pergerakan", x="1,2,3,4...", with title "運動距離", ylabel ="運動距離", xlabel="1:n", legend="運動日期"
+2nd xy curve: plot y v.s x, y="運動距離 Jarak pergerakan", x="1,2,3,4...", with title "運動距離", ylabel ="運動距離", xlabel="1:n", legend="運動日期"
+3rd....
+2.4.3
+create xy plot "全部運動時間"
+calculate 全部運動時間 in each "運動日期" or sum at column 3, 3+4, 3+2*4, ...
+plot "全部運動時間" v.s. "運動日期", with title "全部運動時間-運動日期", ylabel ="全部運動時間", xlabel=運動日期
+2.4.4
+create xy plot "全部運動距離"
+calculate 全部運動距離 in each "運動日期" or sum at column 4, 4+4, 4+2*4, ...
+plot "全部運動距離" v.s. "運動日期", with title "全部運動距離-運動日期", ylabel ="全部運動距離", xlabel=運動日期
+
+3. extarct data at sheet:
+3.1 sheet "血壓" 
+3.2 extract data at Column A "健康 Sehat" from row 1 to a row above chacter "?" and set "nrow" use the last row number
+3.3 get data from row at column C, D, E, F, G or "量血壓日期 Tanggal pengukuran tekanan darah","量血壓時間 Waktu pengukuran tekanan darah","收縮壓, 高壓 Tekanan darah sistolik tekanan tinggi","舒張壓, 低壓 Tekanan darah diastolik tekanan rendah","心跳 Detak jantung"
+where column "D" with date format hh:mm
+3.3.4 
+create a sheet "血壓"
+for the 1st input excel file 
+save data in Column A "健康", to column 1, at sheet "血壓" and keep title at "A1"
+save data in Column C "量血壓日期", to column 2 at sheet "血壓" at "C1""
+save data in Column E "收縮壓, 高壓", to column 3 at sheet "血壓" at "E1"
+save data in Column F "舒張壓, 低壓", to column 4 at sheet "血壓" at "F1"
+save data in Column G "心跳", to column 5 at sheet "血壓" at "G1"
+
+for the 2nd input excel file 
+save data in Column A "健康", to column 1+5, at sheet "血壓" and keep title at "A1"
+save data in Column C "量血壓日期", to column 2+5 at sheet "血壓" at "C1""
+save data in Column E "收縮壓, 高壓", to column 3+5 at sheet "血壓" at "E1"
+save data in Column F "舒張壓, 低壓", to column 4+5 at sheet "血壓" at "F1"
+save data in Column G "心跳", to column 5+5 at sheet "血壓" at "G1"
+
+and so on
+3.4 
+create a sheet "血壓 Plot"
+3.4.1
+create xy plot "高壓"
+plot "高壓" in column 3, 3+5, 3+2*5, 3+3*5 v.s. "量血壓日期" with title "高血壓-量血壓日期", ylabel ="高血壓", xlabel=量血壓日期
+3.4.2
+create xy plot "低壓"
+plot "低壓" in column 4, 4+5, 4+2*5, 4+3*5 v.s. "量血壓日期" with title "低血壓-量血壓日期", ylabel ="低血壓", xlabel=量血壓日期
+3.4.3
+create xy plot "心跳"
+plot "心跳" in column 5, 5+5, 5+2*5, 5+3*5 v.s. "量血壓日期" with title "心跳-量血壓日期", ylabel ="心跳", xlabel=量血壓日期
+
+4. extarct data at sheet:
+4.1 sheet "睡眠" 
+4.2 extract data at Column A "睡眠 Tidur" from row 1 to a row above chacter "?" and set "nrow" use the last row number
+4.3 get data from row at column C, E, G, I or "睡眠 Tidur","日期 Tanggal","開始時間 Waktu mulai","結束時間 Waktu berakhir","睡眠時間 Waktu berolahraga"
+where Column E, G, I with date format hh:mm:ss
+
+4.4.4 
+create a sheet "睡眠"
+for the 1st input excel file 
+save data in Column A "睡眠", to column 1, at sheet "睡眠" and keep title at "A1"
+save data in Column C "日期", to column 2 at sheet "睡眠" at "C1""
+save data in Column E "開始時間", to column 3 at sheet "睡眠" at "E1"
+save data in Column G "結束時間", to column 4 at sheet "睡眠" at "G1"
+In "睡眠時間"="結束時間"-"開始時間", and convert time fomat from hh:mm:ss to hours
+save convert data from Column I "睡眠時間", to column 5 at sheet "睡眠" at "I1"
+
+for the 2nd input excel file 
+save data in Column A "睡眠", to column 1+5, at sheet "睡眠" and keep title at "A1"
+save data in Column C "日期", to column 2+5 at sheet "睡眠" at "C1""
+save data in Column E "開始時間", to column 3+5 at sheet "睡眠" at "E1"
+save data in Column G "結束時間", to column 4+5 at sheet "睡眠" at "G1"
+save data in Column I "睡眠時間", to column 5+5 at sheet "睡眠" at "I1"
+
+and so on
+4.4 
+create a sheet "睡眠 Plot"
+4.4.1
+create xy plot "全部睡眠時間"
+calculate 全部睡眠時間 in each "睡眠時間" or sum at column 5, 5+5, 5+2*5, 5+3*5 in sheet "睡眠"
+plot "全部睡眠時間" in sum at column 5, 5+5, 5+2*5, 5+3*5 v.s. "日期" with title "全部睡眠時間-日期", ylabel ="全部睡眠時間", xlabel=日期
+
+4.4.2
+create xy plot "全部睡眠次數"
+calculate 全部睡眠次數 in each "睡眠時間" number or sum "number of 睡眠時間" at column 5, 5+5, 5+2*5, 5+3*5 in sheet "睡眠"
+plot "全部睡眠次數" in sum at column 5, 5+5, 5+2*5, 5+3*5 v.s. "日期" with title "全部睡眠次數-日期", ylabel ="全部睡眠次數", xlabel=日期
+
+5. beside plot in excel file, also create all plots using plotly 
+ 
+6. save excle file and plotly file at a subfolder "output" the input folder 
+
+7. if data is not existed, skip the data
+
+8. add GUI to allow plot size, font size in plot (title, xlabel, ylabel, legend, ....)
+
+9. write a batch file for "processExcel.py"
+
+
+
+
+
+
+############
+extraxt text and convert to Traditional Chinese and Indonesia
+
+檔案: Berkas File
+開啟 Excel: Buka Excel
+儲存:	Simpan
+另存新檔: Simpan Sebagai
+Gmail 傳送 Excel:	Kirim Excel via Gmail
+Gmail 傳送 PNG	Kirim PNG via Gmail
+
+編輯: Edit Sunting
+放大:	Perbesar
+縮小:	Perkecil
+旋轉 90 度: Putar 90 Derajat
+重置欄/列:	Reset Kolom/Baris
+
+圖表: Grafik, Diagram
+血壓 - 時間: Tekanan Darah - Waktu
+血壓 - 日期 天: Tekanan Darah - Hari
+匯出圖表 PNG: Ekspor Grafik PNG
+匯出工作表: PNGEkspor Lembar Kerja PNG
+
+############ 
+This app is for Traditional Chinese and Indonesia
+convert GUIs: File, Edit, Chart and the sub GUIs to Traditional Chinese and Indonesia
+do not use English in this GUIs
+see attached image for the conversion
+
+############
+
+1 穀類:sereal
+白米: Beras
+糙米: Beras merah
+小麥:Gandum
+麵粉: tepung
+全麥麵粉: Tepung gandum utuh
+全麥麵包: Roti gandum utuh
+麵包: roti
+燕麥: Oat
+黑麥: Rye
+大麥: Jelai
+玉米: Jagung
+薏仁: Barli
+地瓜: Ubi jalar
+馬鈴薯: Kentang
+
+2. 葉菜類: Sayuran Daun
+菠菜: Bayam
+空心菜: Kangkung
+高麗菜: Kubis
+小白菜: Sawi hijau
+大白菜: Sawi putih
+生菜: Selada
+芥菜: Pahit
+
+3. 根莖類: Sayuran Umbi
+胡蘿蔔: Wortel
+白蘿蔔: Lobak putih
+馬鈴薯: Kentang
+地瓜: Ubi jalar
+洋蔥: Bawang bombay
+竹筍: Rebung
+蓮耦: Akar teratai
+
+4. 果菜類: Sayuran Buah
+番茄: Tomat
+茄子: Terong
+小黃瓜: Mentimun
+苦瓜: Pare
+青椒: Paprika
+辣椒: Cabai
+南瓜: Labu kuning
+冬瓜: Labu kundur
+
+5. 花菜類: Sayuran Bunga
+花椰菜 : Kembang kol
+綠花椰: Brokoli
+韭菜花: Bunga kucai
+
+6. 豆菜類: Sayuran Kacang-kacangan
+四季豆: Buncis
+長豆 角豆: Kacang panjang
+毛豆: Edamame
+豆芽菜: Tauge
+
+7. 熱帶水果: buah-buahan tropis
+香蕉: Pisang
+芒果: Mangga
+木瓜: Pepaya
+鳳梨: Nanas
+榴槤: Durian
+山竹: Manggis
+紅毛丹: Rambutan
+蛇皮果: Salak
+蓮霧: Jambu air
+芭樂: Jambu biji
+百香果: Markisa
+火龍果: Buah naga
+波羅蜜: Nangka
+
+8. 核果類: buah berbiji
+蘋果: Apel
+梨子: Pir
+桃子: Persik
+李子: Plum
+櫻桃: Ceri
+
+9. 柑橘類: Buah Jeruk
+柳橙橘子: Jeruk
+檸檬: Lemon
+綠檸檬: Jeruk nipis
+柚子: Jeruk bali
+
+10. 漿果瓜類: Buah Beri, Melon
+草莓: Stroberi
+葡萄: Anggur
+藍莓: Blueberi
+西瓜: Semangka
+哈密瓜: Melon
+
+11. 豆類: Kacang-kacangan
+黃豆大豆: Kacang kedelai
+黑豆: Kacang hitam
+綠豆: Kacang hijau
+紅豆: Kacang merah
+豆腐: Tahu
+豆包 腐皮: Kembang tahu
+豆漿: Susu kedelai
+
+12. 魚類: ikan
+鮭魚: Ikan salmon
+鮪魚: Ikan tuna
+虱目魚: Ikan bandeng
+吳郭魚: Ikan nila
+鱸魚: ikan kakap
+蝦子: Udang
+螃蟹: Kepiting
+烏賊 花枝: Cumi-cumi
+蛤蜊 貝類: Kerang
+
+13. 蛋類: Telur
+雞蛋: Telur ayam
+鴨蛋: Telur bebek
+鹹鴨蛋: Telur asin
+皮蛋: Telur phitan
+鵪鶉蛋: Telur puyuh
+
+14. 肉類: Daging-dagingan
+雞肉: Daging ayam
+鴨肉: Daging bebek
+牛肉: Daging sapi
+羊肉: Daging kambing
+豬肉: Daging babi
+肉丸: Bakso
+
+15. 乳品類: Produk susu
+鮮乳: Susu segar
+優格: Yogurt
+起司: Keju
+保久乳: Susu UHT
+發酵乳: Susu fermentasi
+
+
+Old 飲食 Sheet
+
+New 飲食 Sheet
+
+
+modify C:\Users\a2907\Desktop\desktop-tutorial\app6\InputExcel.xlsx, from C:\Users\a2907\Desktop\desktop-tutorial\app6\InputExce.xlsx
+1. see image 130.png (see the new and old 飲食 sheet)
+2. see image 140.png (Use data in Lists Sheet for Title and list data in 飲食 sheet )
+2.1 title from E2 to T2 in 飲食 sheet in InputExcel.xlsx, using data in cell I1 to W1 in Lists sheet in InputExcel.xlsx
+2.2 cell E2 to E18 in  飲食 sheet in InputExcel.xlsx, using list data in cell I3 to I16 in Lists sheet in InputExcel.xlsx
+2.3 cell F2 to F18 in  飲食 sheet in InputExcel.xlsx, using list data in cell J3 to J9 in Lists sheet in InputExcel.xlsx
+2.4 following the same methods
+2.5 cell S2 to S18 in  飲食 sheet in InputExcel.xlsx, using list data in cell W3 to W9 in Lists sheet in InputExcel.xlsx
+3. see image 130.png and image 150.png (e.g., append results at row 2: E2 to S2 to cell c2)
+3.1 you Can have multiple selections in cells E to T column from Row 2 to 18
+3.2 then, it will append the selected items (e.g., append results at row 2: E2 to S2 to cell c2), (e.g., append results at row 3: E3 to S3 to cell c3)
+3.3 to remove selected item, click the same item again, (e.g., click a selected item at E2 again to remove from E2)
+
+C:\Users\a2907\Desktop\desktop-tutorial\app6\app\src\test\resources\
+
+1. see image 160.png 
+1. see attached image
+repeated error: You did not solve any problems
+1.1 in 飲食 sheet in C:\Users\a2907\Desktop\desktop-tutorial\app6\app\src\test\resources\InputExcel.xlsx
+1.2 Can have multiple selections in cells E3
+1.3 can not append results at row 3: E3 to S3 to cell c3
+1.4 test it and check it to see if it work
+
+1. see attached image
+1.1 in 飲食 sheet in C:\Users\a2907\Desktop\desktop-tutorial\app6\app\src\test\resources\InputExcel.xlsx
+1.2 Can not have multiple selections in cells E3, it will overwrite the 1st item, when select 2nd item
+1.3 test it and check it to see if it work
+
+###############
+1. when I use App6 from C:\Users\a2907\Desktop\desktop-tutorial\app6\ in Android phone
+2. I open C:\Users\a2907\Desktop\desktop-tutorial\app6\app\src\test\resources\InputExcel.xlsm
+3. On 飲食, click E3, It loss all list selections
+4. test it and check it to see if it work
+ 
+###############
+in  App6 from C:\Users\a2907\Desktop\desktop-tutorial\app6\ in Android phone
+1. when open a Excel file
+2. in edit mode
+3. when scroll down or up in a sheet, keep the 1st row (Title) still and not move for easy to see the data
+
+
+
+
+
+############# 運動
+開始運動時間 
+運動結束時間
+全部時間
+增加欄位“運動起”運動迄
+
+#############
+清潔
+起床（刷牙、洗臉、洗屁屁、換尿布）
+刷牙選單改為“換尿布”
+洗臉選單改“熱水擦身體”
+
+
+起床（刷牙、洗臉、洗屁屁、換尿布）: Bangun tidur (menggosok gigi, mencuci muka, membersihkan pantat, mengganti popok)
+換尿布: mengganti popok, 白天: Perawatan siang hari
+熱水擦身體: Basuh tubuh Anda dengan air hangat, 白天: Perawatan siang hari
+洗澡: Mandi, 白天: Perawatan siang hari,
+喝水: Air minum, 白天: Perawatan siang hari
+尿尿: buang air kecil, 白天: Perawatan siang hari
+換尿布: Mengganti popok, 白天: Perawatan siang hari
+洗屁屁: Membersihkan bagian bawah, 白天: Perawatan siang hari
+呼吸器: respirator, 白天: Perawatan siang hari
+喝水: Air minum, 半夜: Kerja malam  
+尿尿: buang air kecil, 半夜: Kerja malam
+換尿布: mengganti popok, 半夜: Kerja malam 
+洗屁屁: Membersihkan bagian bawah, 半夜: Kerja malam
+呼吸器: respirator, 半夜: Kerja malam
+洗澡: Mandi, 半夜: Kerja malam
+
+1/6
+1/5
+1/4
+1/3
+1/2
+1
+
+
+#############
+選喝水時，多一個欄位，喝的量例一杯半杯1/3,1/4,1/5杯（醫生希望每天1200cc以上，所以知道大概量）
+喝水量(杯):
+
+#############
+#############
+每頁第一列要固定住項目
+#############
+飲食
+#############
+“用藥”單獨一頁，選單早,午,晚,其他
+用藥 
+
+藥物
+Obat-obatan 
+保健品
+Produk kesehatan 
+
+用藥時間
+Waktu pemberian obat
+
+#############
+?
+心臟: Jantung
+腎臟: Ginjal
+高血壓: Hipertensi 
+降血壓: Menurunkan tekanan darah 
+降血糖: Menurunkan gula darah 
+降血脂: Menurunkan kolesterol 
+抗生素: Antibiotik
+抗過敏: Antialergi 
+水腫: Edema 
+安眠: Obat tidur 
+安靜: Tenang 
+止痛: Pereda nyeri 
+胃藥: Obat maag 
+腸胃: Pencernaan 
+感冒: Flu 
+止咳: Obat batuk 
+化痰: Pengencer dahak 
+發燒: Demam 
+
+咖啡: Kopi
+蜂蜜: Madu
+蜂膠: Propolis
+維他命: Vitamin
+
+#############
+保健品，我只想知道有沒有給吃x，
+
+#############
+早、午、晚餐、點心、水果我比較想知道吃的量，這個先保留再想想怎麽呈現
+
+#############
+血壓
+第一至第六列不要 
+收縮壓, 高壓
+Tekanan darah sistolik
+tekanan tinggi
+舒張壓, 低壓
+Tekanan darah diastolik
+tekanan rendah
+
+################
+have 血壓 data in 血壓 sheet, when click GUI 圖表, and show no plot
+
+圖表 Grafik
+
+################
+1.1 in 運動 sheet, data from K2 to K35 for 運動距離 (K2：15米, K3：30米)
+1.2 in GUI 圖表 add GUI "運動距離" to plot data from K2 to K35 for 運動距離 (K2：15米, K3：30米)
+2.1 in 清潔 sheet, data from G2 to G35 for 喝水量(杯) (G2：'1/5, G3：'1/5)
+2.2 in GUI 圖表 add GUI "喝水量" to plot data from G2 to G35 for 喝水量 (G2：'1/5, G3：'1/5)
+3.1 in 飲食 sheet, data from E2 to E35 for 食物份量(碗) (E2：'1/5, E3：'1/4)
+3.2 in GUI 圖表 add GUI "食物份量" to plot data from E2 to E35 for 食物份量 (E2：'1/5, E3：'1/4)
+4.1 in GUI "匯出圖表 PNG", it will output any "圖表 PNG" displaied
+4.2 in GUI "匯出工作表 PNG", it will output any "工作表 PNG" displaied 
+
+
+################
+you have add a GUI "Create Plot" under GUI "圖表", but you remove it after modify codes:
+
+redo:
+add a GUI "Create Plot" under GUI "圖表"
+1. when click "Create Plot", it will create a New sheet "Plot", if it "Plot" sheet existed then no creation
+2. it will delete any plots in sheet "Plot"
+3. it will create plot 
+"血壓 時間" with 時間 in x axia
+"血壓 日期" with 日期 in x axia
+"運動距離" without time in x axia
+"喝水量" without time in x axia
+"食物份量" without time in x axia
+4. auto save current Excel file
+
+I can not see a Image in sheet "Lists"
+I also want see Images in sheet "Plot"
+
+################
+when click "運動距離", it did not work because 
+5米: 5 meter
+10米: 10 meter
+15米: 15 meter
+20米: 20 meter
+25米: 25 meter
+30米: 30 meter
+35米: 35 meter
+40米: 40 meter
+you need to parse 10 from "10米: 10 meter"
+ 
+when click "喝水量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+'1
+you need to parse 1/6 from '1/6
+
+when click "食物份量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+1
+'1 1/4
+'1 1/3
+'1 1/2
+'1 3/4
+2
+you need to parse 1/6 from '1/6
+
+when click "建立繪圖", it did not work because
+you need to parse data under "運動距離", "喝水量",  "食物份量", "血壓 時間", "血壓 日期"
+
+################
+When I run app6 at android and it did not create plots in "Plot" sheet
+could you test and run app6 at android and read C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\test.xlsx
+and output the results in test.xlsx and to see if it work
+
+################
+When I run app6 at android and it did not create plots in "Plot" sheet
+could you test and run app6 at android and read C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\test2.xlsx
+and output the results in test2Copy.xlsx and to see if it work                                     
+C:\Users\a2907\Desktop\desktop-tutorial\app6\app\build\outputs\apk\debug
+
+################ 
+in app6 android phone, I can see plot data in "Plot" sheet, but can not see the plots
+when I open this Excel file using Excel, I can see both data and plot
+could you improve app6, so I can see plots in app6
+
+################
+when open C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\InputExceUpdate.xlsx in Android App6
+in 運動 sheet, cell I2= cell G2 - Cell E2,
+and cell I35= cell G35 - Cell E35,
+but it did not do that
+
+in 用藥 sheet, E2 to E35 should be able to do multiple selections, like in 飲食 sheet, cell G2 to G35
+in 用藥 sheet, F2 to F35 should be able to do multiple selections, like in 飲食 sheet, cell G2 to G35
+
+Can you C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\InputExceUpdate.xlsx 
+or also fix app6 in C:\Users\a2907\Desktop\desktop-tutorial\app6\
+Test both app6 and InputExceUpdate.xlsx, make this work
+
+################
+when open C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\InputExceUpdate.xlsx in Android App6
+in 運動 sheet, in cell K2 to K35, there is no selection list: 
+
+吃飯碗: Tempat nasi
+喝水杯子: Gelas minum
+
+################
+run GUI "Create Plot" under GUI "圖表"
+using excel file: C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\資料圖形檔案.xlsx
+when click GUI "Create Plot", it broke because
+
+for plot "運動距離", it did not work because 
+5米: 5 meter
+10米: 10 meter
+15米: 15 meter
+20米: 20 meter
+25米: 25 meter
+30米: 30 meter
+35米: 35 meter
+40米: 40 meter
+you need to parse 10 from "10米: 10 meter"
+ 
+for "喝水量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+'1
+you need to parse 1/6 from '1/6
+
+for "食物份量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+1
+'1 1/4
+'1 1/3
+'1 1/2
+'1 3/4
+2
+you need to parse 1/6 from '1/6
+
+when click "建立繪圖", it did not work because
+you need to parse data under "運動距離", "喝水量",  "食物份量", "血壓 時間", "血壓 日期"
+
+You did have parse codes, but you removed it, after change codes, please recovered codes
+
+and test codes using C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\資料圖形檔案.xlsx
+
+check output and make sure it works
+
+#############
+when open 資料圖形檔案.xlsx in Android phone, using app6,
+When Click "Create Plot", it crashed
+
+I did see you produce 資料圖形檔案_Plot.xlsx using 資料圖形檔案.xlsx
+could test codes using C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\資料圖形檔案.xlsx
+and see will it crash?
+tell me why? and what you did step by step,
+ and fix the problem
+ rebuild apk for every test
+ 
+
+#############
+when open 資料圖形檔案.xlsx in Android phone, using app6, it work, but it still take long time to load file
+do not change any functions or codes, make it run faster
+analyze what codes (each block of codes) take long time to load, what are the major codes take logn time and improve it 
+test codes using C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\資料圖形檔案.xlsx
+list speed before and after change codes for each block of codes
+I suggest look data in each data sheet, if there is no data selected, you may save time to deal with no data
+rebuild apk for every test
+
+############
+########### 
+1 主食: makanan pokok 
+
+1 穀類:sereal
+白米: Beras
+糙米: Beras merah
+全麥麵包: Roti gandum utuh
+麵包: roti
+玉米: Jagung
+薏仁: Barli
+2. 豆類: Kacang-kacangan    
+黃豆大豆: Kacang kedelai
+黑豆: Kacang hitam
+綠豆: Kacang hijau
+紅豆: Kacang merah
+豆腐: Tahu
+豆包 腐皮: Kembang tahu
+豆漿: Susu kedelai
+3. 根莖類: Sayuran Umbi     
+胡蘿蔔: Wortel
+白蘿蔔: Lobak putih
+馬鈴薯: Kentang
+地瓜: Ubi jalar
+洋蔥: Bawang bombay
+竹筍: Rebung
+蓮耦: Akar teratai
+
+########### 
+2 魚肉蛋: Daging ikan Telur
+
+1. 魚類: ikan
+鮭魚: Ikan salmon
+鮪魚: Ikan tuna
+虱目魚: Ikan bandeng
+吳郭魚: Ikan nila
+鱸魚: ikan kakap
+蝦子: Udang
+螃蟹: Kepiting
+烏賊 花枝: Cumi-cumi
+蛤蜊 貝類: Kerang
+2. 肉類: Daging-dagingan   
+雞肉: Daging ayam
+鴨肉: Daging bebek
+牛肉: Daging sapi
+羊肉: Daging kambing
+豬肉: Daging babi
+肉丸: Bakso
+3. 蛋類: Telur
+雞蛋: Telur ayam
+鴨蛋: Telur bebek
+鹹鴨蛋: Telur asin
+皮蛋: Telur phitan
+鵪鶉蛋: Telur puyuh
+4. 乳品類: Produk susu   
+鮮乳: Susu segar
+優格: Yogurt
+起司: Keju
+保久乳: Susu UHT
+發酵乳: Susu fermentasi
+
+########### 
+3 菜類: Sayuran
+
+1. 葉菜類: Sayuran D
+菠菜: Bayam
+空心菜: Kangkung
+高麗菜: Kubis
+小白菜: Sawi hijau
+大白菜: Sawi putih
+生菜: Selada
+芥菜: Pahit
+2. 果菜類: Sayuran Buah
+番茄: Tomat
+茄子: Terong
+小黃瓜: Mentimun
+苦瓜: Pare
+青椒: Paprika
+辣椒: Cabai
+南瓜: Labu kuning
+冬瓜: Labu kundur
+3. 花菜類: Sayuran Bunga
+花椰菜 : Kembang kol
+綠花椰: Brokoli
+韭菜花: Bunga kucai
+4. 豆菜類: Sayuran Kacang-kacangan
+四季豆: Buncis
+長豆 角豆: Kacang panjang
+毛豆: Edamame
+豆芽菜: Tauge
+
+########### 
+4 水果: Buah
+
+1. 核果類: buah berbiji
+蘋果: Apel
+梨子: Pir
+桃子: Persik
+李子: Plum
+櫻桃: Ceri
+2. 熱帶水果: buah-buahan tropis
+香蕉: Pisang
+芒果: Mangga
+木瓜: Pepaya
+鳳梨: Nanas
+榴槤: Durian
+山竹: Manggis
+紅毛丹: Rambutan
+蛇皮果: Salak
+蓮霧: Jambu air
+芭樂: Jambu biji
+百香果: Markisa
+火龍果: Buah naga
+波羅蜜: Nangka
+3. 柑橘類: Buah Jeruk
+柳橙橘子: Jeruk
+檸檬: Lemon
+綠檸檬: Jeruk nipis
+柚子: Jeruk bali
+4. 漿果瓜類: Buah Beri, Melon    
+草莓: Stroberi
+葡萄: Anggur
+藍莓: Blueberi
+西瓜: Semangka
+哈密瓜: Melon
+4. 漿果瓜類: Buah Beri, Melon
+草莓: Stroberi
+葡萄: Anggur
+藍莓: Blueberi
+西瓜: Semangka
+哈密瓜: Melon
+
+############
+菜色太雜，先不用 
+清潔、血壓可以
+保健品增加
+!、你有新的項目要加在裡面嗎、或是其他人的項目要加入、
+我們不修改app, 只有修改excel檔案
+運動: 
+用藥: 保健品, 
+
+
+AAAAAAAAAAAAAAAAAAAAA
+飲食: 日期時間
+
+AAAAAAAAAAAAAAAAAAAAA
+運動
+?
+輪椅散步: Berjalan dengan kursi roda
+健身操: Aerobik
+推自行車走路: Berjalan dengan sepeda
+徒手走路: Berjalan tanpa sarung tangan
+按摩腳: Pijat kaki
+按摩身體: pijat badan
+
+GGGGGGGGGGGGGG
+用藥
+?
+咖啡: Kopi
+蜂蜜: Madu
+蜂膠: Propolis
+維他命: Vitamin
+藍莓錠: Tablet blueberry
+
+#################
+1 常吃食物: Makanan yang umum dikonsumsi
+
+1 穀類:sereal
+白米: Beras
+糙米: Beras merah
+麵包: roti
+包子: Bakpao  
+水餃: Pangsit 
+饅頭: roti kukus
+玉米: Jagung
+豆腐: Tahu
+豆包 腐皮: Kembang tahu
+豆漿: Susu kedelai
+2. 根莖類: Sayuran Umbi
+胡蘿蔔: Wortel
+白蘿蔔: Lobak putih
+馬鈴薯: Kentang
+地瓜: Ubi jalar
+洋蔥: Bawang bombay
+竹筍: Rebung
+3. 魚類: ikan
+鮭魚: Ikan salmon
+虱目魚: Ikan bandeng
+吳郭魚: Ikan nila
+鱸魚: ikan kakap
+蝦子: Udang
+烏賊 花枝: Cumi-cumi
+蛤蜊 貝類: Kerang
+4. 肉類: Daging-dagingan
+雞肉: Daging ayam
+鴨肉: Daging bebek
+豬肉: Daging babi
+肉丸: Bakso
+雞蛋: Telur ayam
+5. 乳品類: Produk susu
+鮮乳: Susu segar
+優格: Yogurt
+起司: Keju
+保久乳: Susu UHT
+發酵乳: Susu fermentasi
+6 菜類: Sayuran
+菠菜: Bayam
+空心菜: Kangkung
+高麗菜: Kubis
+小白菜: Sawi hijau
+大白菜: Sawi putih
+生菜: Selada
+芥菜: Pahit
+7. 果菜類: Sayuran Buah
+番茄: Tomat
+茄子: Terong
+小黃瓜: Mentimun
+苦瓜: Pare
+青椒: Paprika
+辣椒: Cabai
+南瓜: Labu kuning
+冬瓜: Labu kundur
+8. 花菜類: Sayuran Bunga
+花椰菜 : Kembang kol
+綠花椰: Brokoli
+韭菜花: Bunga kucai
+9. 豆菜類: Sayuran Kacang-kacangan
+四季豆: Buncis
+長豆 角豆: Kacang panjang
+毛豆: Edamame
+豆芽菜: Tauge
+10. 核果類: buah berbiji
+蘋果: Apel
+梨子: Pir
+桃子: Persik
+櫻桃: Ceri
+11. 熱帶水果: buah-buahan tropis
+香蕉: Pisang
+芒果: Mangga
+木瓜: Pepaya
+鳳梨: Nanas
+蓮霧: Jambu air
+芭樂: Jambu biji
+百香果: Markisa
+火龍果: Buah naga
+波羅蜜: Nangka
+12. 柑橘類: Buah Jeruk
+柳橙橘子: Jeruk
+檸檬: Lemon
+綠檸檬: Jeruk nipis
+柚子: Jeruk bali
+13. 漿果瓜類: Buah Beri, Melon
+草莓: Stroberi
+葡萄: Anggur
+藍莓: Blueberi
+西瓜: Semangka
+哈密瓜: Melon
+
+############
+in 飲食 sheet column "E", cell E2 to E600, add a calendar at C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\空白檔案 簡單食物.xlsx
+
+############
+in 飲食 sheet column "C" that should combine all selections in Colum
+ns H to K, I can see it show on the App6 android phone, but did not see in output file
+
+in 運動 sheet column "I" that should  have the difference bttween Column G and E, it show in app6 android but nit in output file 
+use C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\空白檔案 簡單食物.xlsx as input
+
+############
+under GUI "檔案"
+at the end of the GUIs list
+add a GUI "儲存並退出: Simpan dan keluar"
+add a GUI "退出: keluar"
+
+when clcik "儲存並退出: Simpan dan keluar", it will save excel file and exit
+when clcik "退出: keluar", it will exit without save excel file
+
+
+############ 
+when at a sheet, scroll the cell from left to right, fix the row number, (1,2,3..) so user can see rown number
+do not change any other codes
+test codes using C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\NewData\text.xlsx
+rebuild apk for every test
+
+############ 
+1. 當點擊 GUI  "重置欄/列", App 系統崩潰: fix this problem and 
+2. do not change any other codes
+3. test codes using C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\NewData\text.xlsx
+4. rebuild apk for every test
+
+############ 
+app6 in foler "C:\Users\a2907\Desktop\desktop-tutorial\app6" is develope for android phont
+1. test codes using C:\Users\a2907\Desktop\desktop-tutorial\app6\Deploy\NewData\text.xlsx
+2. test every sheet in row 2 that can select, e.g., 
+in sheet "運動", A2 to K2
+in sheet "清潔", A2 to G2
+in sheet "飲食", A2 to L2
+in sheet "用藥", A2 to F2
+in sheet "血壓", A2 to G2
+3. test evey GUIs in the attached image 
+4. all test should pa
+5. rebuild apk for every test
+6. if need to update codes for "1." only and do not change any other codes
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+############ 
+app6 in foler "C:\Users\a2907\Desktop\desktop-tutorial\app6" is develope for android phone
+create project at "C:\Users\a2907\Desktop\desktop-tutorial\app7"
+duplicate app6 and code "readExcel.py" with python code for a labtop computer at "C:\Users\a2907\Desktop\desktop-tutorial\app7"
+1. test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\text.xlsx
+2. test every sheet in row 2 that can select, e.g., 
+in sheet "運動", A2 to K2
+in sheet "清潔", A2 to G2
+in sheet "飲食", A2 to L2
+in sheet "用藥", A2 to F2
+in sheet "血壓", A2 to G2
+3. test evey GUIs in the attached image 
+4. all test should pass in text.xlsx and evey GUIs in the apps
+5. create a batch file for "readExcel.py"
+
+############
+error: see attaches image in C3 and I3 to L3
+under columns: 2 主食:, 3 魚肉蛋:, 4 菜類:, 5 水果:
+delections in I3 to L3, did not add data to C3
+
+############ 
+when at a sheet, show Column A, B, C
+when at a sheet, scroll the cell from left to right, fix the row number, (1,2,3..) so user can see rown number
+when at a sheet, scroll the cell from Top to Bottom, fix the 1 row, so user can see title
+when at a sheet, click horizon line between number 2 and number 3 at row, then drag this line, it can change the cell height
+... same for: between number 3 and number 4 at row,...
+when at a sheet, click vertical line between column A and B at top, then drag this line, it can change the cell width
+... same for: between column B and C at top
+in sheet "飲食", when click  Colum "C", C2, C3, can see the data
+
+############ 
+see attached image for the codes modifications
+do not change any other codes that has nothing with the problems in attached image
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\text.xlsx
+
+################
+1.1 in 運動 sheet, data from K2 to K35 for 運動距離 (K2：15米, K3：30米)
+1.2 in GUI 圖表 add GUI "運動距離" to plot data from K2 to K35 for 運動距離 (K2：15米, K3：30米)
+2.1 in 清潔 sheet, data from G2 to G35 for 喝水量(杯) (G2：'1/5, G3：'1/5)
+2.2 in GUI 圖表 add GUI "喝水量" to plot data from G2 to G35 for 喝水量 (G2：'1/5, G3：'1/5)
+3.1 in 飲食 sheet, data from E2 to E35 for 食物份量(碗) (E2：'1/5, E3：'1/4)
+3.2 in GUI 圖表 add GUI "食物份量" to plot data from E2 to E35 for 食物份量 (E2：'1/5, E3：'1/4)
+4.1 in GUI "匯出圖表 PNG", it will output any "圖表 PNG" displaied
+4.2 in GUI "匯出工作表 PNG", it will output any "工作表 PNG" displaied 
+
+when click "運動距離", it did not work because 
+5米: 5 meter
+10米: 10 meter
+15米: 15 meter
+20米: 20 meter
+25米: 25 meter
+30米: 30 meter
+35米: 35 meter
+40米: 40 meter
+you need to parse 10 from "10米: 10 meter"
+ 
+when click "喝水量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+'1
+you need to parse 1/6 from '1/6
+
+when click "食物份量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+1
+'1 1/4
+'1 1/3
+'1 1/2
+'1 3/4
+2
+you need to parse 1/6 from '1/6
+
+
+you need to parse data in 血壓 sheet:
+收縮壓, 高壓 Tekanan darah sistolik tekanan tinggi
+113
+115
+115
+112
+
+舒張壓, 低壓 Tekanan darah diastolik tekanan rendah
+113
+110
+115
+112
+
+心跳 Detak jantung
+52
+112
+110
+113
+
+when click "建立繪圖", it did not work because
+you need to parse data under "運動距離", "喝水量",  "食物份量", "血壓 時間", "血壓 日期"
+
+do not change any other codes that has nothing with the problems in attached image
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\text.xlsx
+
+###########
+when click "Create Plot", the output still show nothing
+see attached image
+do not change any other codes that has nothing with the problems in attached image
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\text.xlsx
+
+###########
+when click GUI "重置欄/列", it should reset the cell width and height based on the font size, so there is no cutof the text in cell
+see attached image 
+do not change any other codes that has nothing with the problems in attached image
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\text.xlsx
+
+###########
+when click GUI "Gmail 傳送 Excel", it send to Gmail but without Excel file
+when click GUI "Gmail 傳送 PNG", it send to Gmail but without PNG file
+do not change any other codes that has nothing with the problems in attached image
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\text.xlsx
+
+Kirim Excel lewat Gmail
+Kirim PNG lewat Gmail
+
+###########
+
+When click "GUI "Gmail 傳送 Excel", it require password, I think required "password" is a bad requirement, think if I want to send a file a a friend, why I need my friend passwors?
+
+When click "GUI "Gmail 傳送 Excel",it send email, but send no Excel file
+
+###########
+When you click Gmail 傳送 Excel:
+Enter your friend’s email
+Gmail compose opens with that address
+The Excel file is copied as a file (not just a path)
+After about 3 seconds, Ctrl+V is sent so Gmail can attach it
+If the attachment does not appear, click the Gmail compose window and press Ctrl+V once.
+
+###########
+1st image: from Apps, 2nd imge, the output file, The difference is the cells width and height, could you make output file have the same format as it in the APPs
+
+############ 
+https://github.com/steveGau/desktop-tutorial/tree/main/app7
+
+############ 
+Gmail 傳送 Excel / Gmail 傳送 PNG asks for the friend’s email only. 
+It opens Gmail compose with that address, 
+copies the file to the clipboard as an attachment,
+Ctrl+V 
+and sends Ctrl+V after a short delay so Gmail can attach it. 
+If the file does not appear, click the compose window and press Ctrl+V.
+
+############ 
+when click readExcel.bat, it should not read any .xlsx or text.xlsx 
+do not change any other codes that has nothing with the problems in attached image
+
+############ 
+in sheet "運動", C coulmn "運動日期 Tanggal Olahraga", when click C2 to C..., it always show the current date at Taiwan
+in sheet "清潔", C coulmn "清潔日期 Tanggal pembersihan", when click C2 to C..., it always show the current date at Taiwan
+in sheet "飲食", E coulmn "日期Tanggal", when click E2 to E..., it always show the current date at Taiwan
+in sheet "用藥", C coulmn "用藥日期 Tanggal pemberian obat", when click C2 to C..., it always show the current date at Taiwan
+in sheet "血壓", C coulmn "量血壓日期 Tanggal pengukuran tekanan darah", when click C2 to C..., it always show the current date at Taiwan
+
+in sheet "運動", E coulmn "開始時間 Waktu mulai", when click E2 to E..., it always show the current time at Taiwan
+in sheet "清潔", E coulmn "清潔時間 Waktu bersih-bersih", when click E2 to E..., it always show the current time at Taiwan
+in sheet "飲食", F coulmn "時間 Waktu", when click F2 to F..., it always show the current time at Taiwan
+in sheet "用藥", D coulmn "用藥時間 Waktu pemberian obat", when click D2 to D..., it always show the current time at Taiwan
+in sheet "血壓", D coulmn "量血壓時間 Waktu pengukuran tekanan darah", when click D2 to D..., it always show the current time at Taiwan
+do not change any other codes that has nothing with the problems in attached image
+
+
+add a GUI to reset and auto calculate Column width and row height for a current sheet,
+it can wrap the text, but not truncate the text that can not see
+when scroll down or up in a sheet, keep the 1st row (Title) still and not move for easy to see the data
+when at a sheet, scroll the cell from left to right, fix the row number, (1,2,3..) so user can see rown number
+
+
+############ 
+when click GUI "重置欄/列", 
+from 2 row down, it did a good job to reset the cell width and height based on the font size, so there is no cutof the text in cell
+at the 1st row, it show the title that have different font size compare to 2 row down
+so, do the 1st row based on the  on the font size at the 1st row cell width and height
+Keep codes for  2 row down not changes 
+do not change any other codes that has nothing with the problems in attached image
+Test codes using CC:\Users\a2907\Desktop\desktop-tutorial\app7\Input\text.xlsx
+
+############ 
+in project: C:\Users\a2907\Desktop\desktop-tutorial\app7\
+attached image show the 1st row text: Before/ after click "重置欄/列"
+You should 
+1. calculate number of character in every cell in the 1st row
+2. the height and width in every cell in the 1st row based on number of characters
+3. determine 1st row height based which cell in the 1st row have the max row height
+do not change any other codes that has nothing with the problems in attached image
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\text_111.xlsx
+
+############ 
+You still did not solve the problem:
+in project: C:\Users\a2907\Desktop\desktop-tutorial\app7\
+attached image show the 1st row text: Before/ after click "重置欄/列"
+You should 
+1. calculate number of character in every cell in the 1st row
+2. the height and width in every cell in the 1st row based on number of characters
+3. determine 1st row height based which cell in the 1st row have the max row height
+do not change any other codes that has nothing with the problems in attached image
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\text_222.xlsx
+you nedd to make sure it works (not just change the codes)
+tell me what you did and show me the good results
+
+############ 
+Gmail 傳送 Excel / Gmail 傳送 PNG  
+It opens Gmail compose with that address, 
+copies the file to the clipboard as an attachment,
+user need to do "Ctrl+V" to send the Excel using Gmail
+This is too much for the User, Can App do "Ctrl+V" for the user
+
+
+############ 
+Still not working: see attached image, it stay there do nothing
+Gmail 傳送 Excel / Gmail 傳送 PNG  
+It opens Gmail compose with that address, 
+copies the file to the clipboard as an attachment,
+user need to do "Ctrl+V" to send the Excel using Gmail
+This is too much for the User, Can App do "Ctrl+V" for the user
+you nedd to make sure it works (not just change the codes)
+tell me what you did and show me the good results
+
+############ 
+in project: C:\Users\a2907\Desktop\desktop-tutorial\app7\
+Original Input File: 1st row: Center Alignment
+Input File from Original Input File in APP: 1st row: Left Alignment
+do not change any other codes that has nothing with the problems in attached image
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\2.xlsx
+you nedd to make sure it works (not just change the codes)
+tell me what you did and show me the good results
+
+############ 
+Add new GUI under GUI "編輯", see attached image
+it with rest cell width and height for all work sheets
+do not change any other codes that has nothing with the problems in attached image
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\2.xlsx
+you nedd to make sure it works (not just change the codes)
+tell me what you did and show me the good results
+
+############
+this is current setup
+1. when at a sheet, show Column A, B, C
+reset this setup
+2. when at a sheet, show Column A
+do not change any other codes that has nothing with "1."
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\2.xlsx
+you nedd to make sure it works (not just change the codes)
+tell me what you did and show me the good results
+
+############
+in "Plot" sheet
+1. it can show plot 
+2. add capability to show data too
+3. All data cells alignment?: Top, Left, Font: Arial, Font Size: 24, Bold
+4. Under each data set is the plot using data above
+5. Use should be able to see both data and plots
+6 see image for the show format
+do not change any other codes that has nothing with "1. to 6."
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\2.xlsx
+you nedd to make sure it works (not just change the codes)
+tell me what you did and show me the good results
+
+############
+1. in GUI "圖表"
+add GUI "運動時間 Waktu berolahraga" under GUI "血壓 - 日期 Tekanan Darah - Hari"
+when clcik "運動時間 Waktu berolahraga", it will create a plot.
+using data in 運動 sheet
+data in Column I (運動時間: Waktu berolahraga)
+data in Rows I2 to I.....
+00:03
+00:13
+01:12
+you need parse data 
+3 from 00:03   (3 second)
+13 from 00:13  (13 second)
+72 from 01:12  (72 second)
+the data format and plot format is the same as the other plots
+
+2. when click GUI "Create Plot"
+you create all plots include plot for (運動時間: Waktu berolahraga)
+
+do not change any other codes that has nothing with "1. to 6."
+Test codes using C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\2.xlsx
+you nedd to make sure it works (not just change the codes)
+tell me what you did and show me the good results
+
+
+############
+in C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx
+in GUI "運動時間 Waktu berolahraga"
+here is I2 equation
+=IF(OR(E2="",G2=""),"",IFERROR(TEXT(MOD(IF(ISNUMBER(G2),G2,TIMEVALUE(G2))-IF(ISNUMBER(E2),E2,TIMEVALUE(E2)),1),"hh:mm:ss"),""))
+repace this equation:
+1. set defaut is "?"
+2. when click "I2", show the default current time, the user can change and select time
+rewrite C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx
+This has nothing to do with python file, do not change any codes in python file
+
+############
+there are problem:
+1. in C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx, C2, C3, .. should have current time
+need to modify test.xlsx
+2. in test.xlsx in App, C2, C3, ... should show "?", and when click C2, C3, it should show current time 
+This has nothing to do with python file, do not change any codes in python file
+only modify codes has to do with "2." and do not change other codes
+see attached image
+
+############
+there are correction:
+1. in C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx, C2, C3, .. should 
+1.1 show "?"
+1.2 when click C2, C3,.. include equation: have time difference between G - E, or G2-E2, G3-E3, ...
+need to modify test.xlsx
+2. in test.xlsx in App, C2, C3, ... should show "?", and when click C2, C3, it should show time difference between G - E, or G2-E2, G3-E3, ...
+This has nothing to do with python file, do not change any codes in python file
+only modify codes has to do with "2." and do not change other codes
+
+############
+there are correction:
+1. in C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx, C2, C3, ..
+1.1 you have this: it show "?" and keep "?"
+1.2 when click C2, C3,.. you show a list of number, that is wrong.
+you should equation: have time difference between G - E, or G2-E2, G3-E3, ...
+need to modify test.xlsx
+see attached image
+
+############
+1. It should show "?" After loading Excel file (C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx)
+2. It should show "00:04" After Clicking Cell I2
+3. "00:04" is calculate based on Equation G2-E2 (written in I2)
+4. you need to modify python codes and do not change any codes in python file
+only modify codes has to do with "1. 2. 3." and do not change other codes
+5. test using  C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx 
+
+############
+still problem in App for Cell I2, after click Cell I2, see attached image
+When click I2, 2nd time
+it pop a clock, that is wrong
+it should pop a difference, "=G2-E2"
+only modify codes has to do with I2 and do not change other codes
+test using  C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx
+see attached image
+
+############
+in 運動 sheet 
+reset format at column E "結束時間": hh:mm:ss
+reset format at column G "結束時間": hh:mm:ss
+only modify codes has to do with E2, E3,.. G2, G3,.. and do not change other codes
+test using  C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx
+see attached image
+
+############
+in 運動 sheet 
+keep every thing in column I, and only reset format "hh:mm:ss" at column I, 
+for I2 "=G2-E2", I3 "=G3-E3"    
+only modify codes has to do with I2, I3,.. and do not change other codes
+test using  C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx
+see attached image
+
+############
+modify codes: plot data at I column "運動時間" at "運動" sheet
+see attached image
+only modify codes has to do with I2, I3,.. and do not change other codes
+test using  C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx
+see attached image
+
+############ 
+Create A ReadeMe.md
+Commit all files and f############
+modify codes: plot data at I column "運動時間" at "運動" sheet
+see attached image
+only modify codes has to do with I2, I3,.. and do not change other codes
+test using  C:\Users\a2907\Desktop\desktop-tutorial\app7\Input\test.xlsx
+see attached image
+older "C:\Users\a2907\Desktop\desktop-tutorial\app7" to git and to push main to GitHub.
+
+#############
+I have a project at C:\Users\User\Desktop\app7, this project is created by cursor in the other computer, 
+I copy to this computer, This project work on my other computer, could make it work in this computer
+
+#############
+You don’t need Origin to fix app7. Use one of these instead:
+Gmail → download MAKE_IT_WORK.bat → double-click
+Or open steve-gau/app-boot in the browser → download MAKE_IT_WORK.bat → double-click
+That repairs C:\Users\User\Desktop\app7 on this PC.
+
+It works
+when click "run_readExcel.bat"
+
+#############
+I can start app7, when clcik Gmail to send Excel, in did not put Excel file to send, see attached image
+
+############
+create a batch file at C:\Users\User\Desktop\ with name EXCEL to run app7
+
+############ 
+Create A ReadeMe.md
+Commit all files and folder "C:\Users\User\Desktop\app7" to git and to push main to GitHub.
+do not ask questions, just do it
+
+https://cursor.com/codebase/steve-gau/app-boot/tree/main
+
+############ 
+how to change icon for a app at  C:\Users\User\Desktop
+
+############ 
+how to create a short for "C:\Users\User\Downloads\" at C:\Users\User\Desktop
+
+Berkas Nenek 奶奶檔案 
+
+Arsip Kosong 空白大檔案
+空白小檔案 Profil
+Arsip Data 資料大檔案
+Profil Dokumen 資料小檔案
+############ 
+in project C:\Users\User\Desktop\app7
+1. add a vertical and horizontal scroll bar, so can see all the images and data
+do not change any other codes and only modify codes has to do "1." 
+test using  C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+you must see the result and let me know, it works
+
+############ 
+i still did not see horizontal scroll bar, 
+do not change any other codes and only modify codes has to do " horizontal scroll bar" 
+see attached image
+
+############ 
+you change codes, when click Gmail Excel, it did not send attached Excel file
+do not change any other codes and only modify codes has to do " = Gmail Excel" 
+see attached image
+
+############
+still error:  it did not send attached Excel file
+
+you change codes, when click Gmail Excel, it did not send attached Excel file
+do not change any other codes and only modify codes has to do " = Gmail Excel" 
+do not ask me questions, just do it, make it work
+see attached image, test it and make sure it works
+
+
+############
+Orang Indonesia belajar bahasa Mandarin 印尼人學中文
+
+https://www.youtube.com/playlist?list=PL_3xYyxIeJ1gVEQ--XVSKkV3uigxflC8P
+
+
+############.xlsx
+repeated error:
+could you put  horizontal scroll bar to top of the plot diplay winodw
+when load Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx), go to Plot sheet, can not see  horizontal scroll bar, 
+do not change any other codes and only modify codes has to do " = horizontal scroll bar" 
+you have change other codes before, do not change any other codes.
+do not ask me questions, just do it, make it work
+see attached image, test it and make sure it works
+
+############
+Gmail PNG did not work, Use "Gmail Excel" codes to fix it 
+do not change any other codes and only modify codes has to do "Gmail PNG" 
+you have change other codes before, do not change any other codes.
+do not ask me questions, just do it, make it work
+see attached image, test it and make sure it works
+
+############
+it has 4 png files, but only load 1 png file
+do not change any other codes and only modify codes has to do "Gmail PNG" 
+you have change other codes before, do not change any other codes.
+do not ask me questions, just do it, make it work
+see attached image, test it and make sure it works
+
+
+############
+it has 4 png files, but shown 5 plots, and only 3 files have been downloaded
+you should find all png files with file names, should have same plots and same files  downloaded
+do not change any other codes and only modify codes has to do "Gmail PNG" 
+you have change other codes before, do not change any other codes.
+do not ask me questions, just do it, make it work
+see attached image, test it and make sure it works
+
+
+############
+it took very long time to Gmial Excel file
+it is not exceptable
+do not change any other codes and only modify codes has to do "Gmail Excel" 
+you have change other codes before, do not change any other codes.
+do not ask me questions, just do it, make it work, why took so long
+see attached image, test it and make sure it works
+
+############
+remove GUI  "Gmail 傳送 PNG" and remove the relative codes 
+do not change any other codes and only codes has to do "Gmail 傳送 PNG"
+test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+############
+repeated error:
+you did not delete GUI "Gmail 傳送 PNG"
+see attached image
+why this is so simple and just delete a gui, tell me why
+remove GUI  "Gmail 傳送 PNG" and remove the relative codes 
+do not change any other codes and only codes has to do "Gmail 傳送 PNG"
+test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+############
+repeated error:
+you did not delete GUI "Gmail 傳送 PNG"
+see attached image
+remove GUI  "Gmail 傳送 PNG" and remove the relative codes 
+do not change any other codes and only codes has to do "Gmail 傳送 PNG"'
+just do it, fix the problem
+test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+
+###########
+when click GUI Gmail 傳送 Excel, got error
+instead fix unlimited problems for "Gmail Excel" can you rebuild "Gmail 傳送 Excel" use the code you had before
+do not change any other codes and only codes has to do "Gmail 傳送 Excel"'
+just do it, fix the problem
+test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+###########
+when click GUI Gmail 傳送 Excel
+can not get Excel file
+, got message
+Excel: C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+Outlook desktop not installed — using mail draft with attachment.
+Wrote email draft with Excel attached: C:\Users\User\Desktop\DailyExcel_Gmail_send.eml
+Mail app opened. Click Send.
+Elapsed: 0.49s
+
+###########
+I do not like Password, do not like to use OutLook, make Gmail Excel siimple and make it work
+you had codes for "Gmail 傳送 Excel" that do not use OutLook, Password,
+do not change any other codes and only codes has to do "Gmail 傳送 Excel"
+just do it, fix the problem
+test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+###########
+Because my computer crashed, continuing my previous request:
+1. When click "圖表 Grafik" 
+2. click "Create Plot 建立繪圖"
+3. Got error: "type object 'SheetFit' has no attribute 'cells'
+4. It took to long to fix
+5. I want to rebuild  "Create Plot 建立繪圖" fron scratch, you can use previous codes
+6. see attached image, for the plot format
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+11. you need parse data 
+when click "運動距離", it did not work because 
+5米: 5 meter
+10米: 10 meter
+15米: 15 meter
+20米: 20 meter
+25米: 25 meter
+30米: 30 meter
+35米: 35 meter
+40米: 40 meter
+you need to parse 10 from "10米: 10 meter"
+ 
+when click "喝水量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+'1
+you need to parse 1/6 from '1/6
+
+when click "食物份量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+1
+'1 1/4
+'1 1/3
+'1 1/2
+'1 3/4
+2
+you need to parse 1/6 from '1/6
+
+
+you need to parse data in 血壓 sheet:
+收縮壓, 高壓 Tekanan darah sistolik tekanan tinggi
+113
+115
+115
+112
+
+舒張壓, 低壓 Tekanan darah diastolik tekanan rendah
+113
+110
+115
+112
+
+心跳 Detak jantung
+52
+112
+110
+113
+
+data in Column I (運動時間: Waktu berolahraga)
+data in Rows I2 to I.....
+00:03
+00:13
+01:12
+you need parse data 
+3 from 00:03   (3 second)
+13 from 00:13  (13 second)
+72 from 01:12  (72 second)
+the data format and plot format is the same as the other plots
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+This is the error occur before rebuild, ignore this error, focus on the rebuild codes: 
+5. I want to rebuild  "Create Plot 建立繪圖" fron scratch, you can use previous codes
+6. see attached image, for the plot format
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+11. you need parse data 
+when click "運動距離", it did not work because 
+5米: 5 meter
+10米: 10 meter
+15米: 15 meter
+20米: 20 meter
+25米: 25 meter
+30米: 30 meter
+35米: 35 meter
+40米: 40 meter
+you need to parse 10 from "10米: 10 meter"
+ 
+when click "喝水量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+'1
+you need to parse 1/6 from '1/6
+
+when click "食物份量", it did not work because 
+?
+'1/6
+'1/5
+'1/4
+'1/3
+'1/2
+1
+'1 1/4
+'1 1/3
+'1 1/2
+'1 3/4
+2
+you need to parse 1/6 from '1/6
+
+
+you need to parse data in 血壓 sheet:
+收縮壓, 高壓 Tekanan darah sistolik tekanan tinggi
+113
+115
+115
+112
+
+舒張壓, 低壓 Tekanan darah diastolik tekanan rendah
+113
+110
+115
+112
+
+心跳 Detak jantung
+52
+112
+110
+113
+
+data in Column I (運動時間: Waktu berolahraga)
+data in Rows I2 to I.....
+00:03
+00:13
+01:12
+you need parse data 
+3 from 00:03   (3 second)
+13 from 00:13  (13 second)
+72 from 01:12  (72 second)
+the data format and plot format is the same as the other plots
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+運動距離 — "10米: 10 meter" → 10
+運動時間 — "00:03" / "01:12" / "00:01:02" → seconds
+喝水量 — "'1/6" / "'1" → float
+食物份量 — "'1/6" / "'1 1/4" / 2 → float
+血壓 — plain numbers for 收縮壓 / 舒張壓 / 心跳
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+To find all Python files (.py) in the current directory and all subdirectories:
+Get-ChildItem -Path . -Recurse -Filter *.py
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+To find a Python files in the current directory and all subdirectories:
+Get-ChildItem -Recurse -File -Filter install_create_plot_rebuild.py
+
+saw the python file were not updated:  using command: date
+The current date is: 09/20/2026 Sun              and check files dates: PS C:\Users\User\Desktop\app7> Get-ChildItem -Path . -Recurse -Filter *.py
+    Directory: C:\Users\User\Desktop\app7
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         9/19/2026   4:16 PM           1895 readExcel - Copy.py
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+stop send me email, you waste a lot of time to send email, but did not put needed files at the right location
+This is not right, you did the work but did not put files at the right location, could you do it what need to do
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+when run INSTALL_INTO_DESKTOP_APP7.bat 
+C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe: 
+can't open file 'C:\\Users\\User\\Desktop\\app7\\install_create_plot_rebuild.py':
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+I have both files at C:\Users\User\Desktop\
+INSTALL_INTO_DESKTOP_APP7.ps1 
+INSTALL_INTO_DESKTOP_APP7.bat 
+I run INSTALL_INTO_DESKTOP_APP7.bat
+I did not see: install_create_plot_rebuild.py, create_plot_rebuild.py, and plot_value_parsers.py
+
+I run ildItem -Path . -Recurse -Filter *.py
+
+PS C:\Users\User\Desktop\app7> Get-ChildItem -Path . -Recurse -Filter *.ps1
+PS C:\Users\User\Desktop\app7> Get-ChildItem -Path . -Recurse -Filter *.py
+
+
+    Directory: C:\Users\User\Desktop\app7
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         9/19/2026   4:16 PM           1895 readExcel - Copy.py
+-a----         9/19/2026   4:16 PM           1895 readExcel.py
+-a----         9/19/2026   8:47 PM           6094 send_excel_email.py
+-a----         9/19/2026   4:12 PM            306 _gmail_png_guard.py
+
+
+    Directory: C:\Users\User\Desktop\app7\dailyexcel
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         9/19/2026   4:56 PM          17089 charts.py
+-a----         9/19/2026   6:28 PM          13001 controller.py
+-a----         9/19/2026   4:56 PM          11990 copytext.py
+-a----         9/19/2026   6:16 PM          30965 core.py
+-a----         9/16/2026   7:17 PM            149 editor.py
+-a----         9/19/2026   5:12 PM          62791 gmail.py
+-a----         9/19/2026   6:28 PM          56122 gui.py
+-a----         9/19/2026   4:56 PM          14296 io.py
+-a----         9/19/2026   4:56 PM          20897 logic.py
+-a----         9/19/2026   4:56 PM          20389 plotworkbook.py
+-a----         9/19/2026   4:56 PM           6545 png.py
+-a----         9/19/2026   4:56 PM          11934 session.py
+-a----         9/19/2026   6:28 PM           2650 _gmail_excel_rebuild.py
+-a----         9/19/2026   6:16 PM           3212 _sheetmodel_cmp_patch.py
+-a----         9/19/2026   6:16 PM           1553 __init__.py
+
+
+    Directory: C:\Users\User\Desktop\app7\Old
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         9/19/2026   4:16 PM           1895 readExcel.py
+-a----         9/19/2026   4:12 PM          85659 test_readExcel.py
+-a----         9/19/2026   9:23 AM           1051 _list_gmail_windows.py
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$I got 3 fules:
+-a----         9/20/2026   7:10 AM          17719 create_plot_rebuild.py
+-a----         9/20/2026   7:10 AM          17140 charts.py
+-a----         9/20/2026   7:10 AM          13052 controller.py
+
+what is the next$ 
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for rebuilding  "Create Plot 建立繪圖" fron scratch
+When click GUI: 圖表 it took long time to display a GUI (this GUI is not necessary to have and to to click) to click, then click this GUI, it Did not Create "Plot" Sheet
+6. see attached image for the problem:
+fix problem: Create "Plot" Sheet and show plot data
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\test.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for rebuilding  "Create Plot 建立繪圖" fron scratch
+When click GUI: 圖表 it took long time to run and show few plots, it is not clear where are these plots located 
+when click sheet e.g., "運動", it seems hanging and shown "DailtExcel (沒有回應)"
+I guess "it took long time" that may due to it look all Sheets for plot region
+Should to for "?" for the end of plot data, see attached image
+
+Could you test run "click GUI: 圖表", and see what is going on
+let me know step by step, why
+fix problem
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\test.xlsx
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for rebuilding  "Create Plot 建立繪圖" fron scratch
+When click GUI: 圖表, I can see "it create plots", but it did not show Plot Sheet, 
+Then, I open test.xlsx, it show Plot Sheet and with all plots and data
+So, it need to update Sheets that include Plot Sheet with all plots and data
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\test.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+repeated problems
+still did not have "心跳 Detak jantung" plot
+for rebuilding  "Create Plot 建立繪圖" fron scratch
+When click GUI: 圖表, it miss data of "心跳 Detak jantung" in sheet "血壓"
+you need parse data at "心跳 Detak jantung"
+52
+112
+110
+..
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\test.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+list is contents of gui_plot_views.py, has 734 line
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+1. When click "儲存 Simpan" 
+2. Got error: "type object 'SheetFit' has no attribute 'cells'"
+3. rebuild  "儲存 Simpan" from scratch
+
+4. When click "另存新檔 Simpan Sebagai" 
+5. Got error: "type object 'SheetFit' has no attribute 'cells'"
+6. rebuild  "另存新檔 Simpan Sebagai" from scratch
+
+7. When click "儲存並退出: Simpan dan keluar" 
+8. Got error: "type object 'SheetFit' has no attribute 'cells''
+9. rebuild  "儲存並退出: Simpan dan keluar" from scratch
+
+10. do not change any other codes and only codes has to do "this error"
+11. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+12. just do it, fix the problem
+13. test Excel file (C:\Users\User\Downloads\test.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+0. for "儲存 Simpan" 
+1. open test.xlsx and add new data
+2. When click "儲存 Simpan" 
+3. it said "SAVE_OK C:\Users\User\Downloads\test.xlsx"
+4. when open test Excel file (C:\Users\User\Downloads\test.xlsx, did not see the checged results
+. it did not save the excel file
+6. tell me the results
+10. do not change any other codes and only codes has to do "this error"
+11. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+12. just do it, fix the problem
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+repeated error:
+When click "儲存 Simpan" , got errors see image, did you put the codes you write, and put in the correct path, 4. when open test Excel file (C:\Users\User\Downloads\test.xlsx, did not see the checged results
+. it did not save the excel file
+6. tell me the results
+10. do not change any other codes and only codes has to do "this error"
+11. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+12. just do it, fix the problem
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+repeated error:
+0. for "儲存 Simpan" 
+1. open test.xlsx and add new data
+2. When click "儲存 Simpan" 
+3. it said "SAVE_OK C:\Users\User\Downloads\test.xlsx"
+4. when open  Excel file (C:\Users\User\Downloads\test.xlsx, did not see the checged results
+5. it did not save the excel file
+6. reubuild code for "儲存 Simpan", using some codes in GUI "GUI: 圖表" 
+7. recall When click GUI: 圖表, 
+7.1 it will create Sheet "Plot" if sheet "Plot" not existed
+7.2 it clean and delete all data and plots in sheet "Plot"
+7.3 it save Excel file include data and plots in sheet "Plot"
+7.4 you need to use the codes in 7.3
+8. test code using C:\Users\User\Downloads\test.xlsx
+10. do not change any other codes and only codes has to do "this error"
+11. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+12. just do it, fix the problem
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+repeated error:
+for "儲存 Simpan"
+before test.xlsx size = 870 K
+add data
+when click "儲存 Simpan", got error, see attached image
+after click test.xlsx size = 870 K 
+after click test_SAVED_OK size = 870 K
+it response: SAVE_OK C:\Users\User\Downloads\test.xlsx save_rebuild_bytesio_v3 ui_writes=11 how=disk_snapshot ok_sidecar=C:\Users\User\Downloads\test_SAVED_OK.xlsx
+it response: SAVE_OK C:\Users\User\Downloads\test.xlsx
+I think, it did not save test.xlsx and test_SAVED_OK.xlsx
+I think you need to refresh Excel before save
+what is your suggestions
+I follow what you suggest and waste too much time
+tell me how, what
+
+SAVE_OK C:\Users\User\Downloads\test.xlsx save_rebuild_bytesio_v2 ui_writes=14081
+SAVE_OK C:\Users\User\Downloads\test.xlsx
+
+
+check codes in GUI "GUI: 圖表"
+step by step what codes used
+and how to fix
+8. test code using C:\Users\User\Downloads\test.xlsx
+10. do not change any other codes and only codes has to do "this error"
+11. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+12. just do it, fix the problem
+compare difference between  "儲存 Simpan" and "GUI: 圖表" using real data, not guess
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for GUI "儲存 Simpan"
+before test.xlsx size = 870 K
+add data
+when click "儲存 Simpan", got error, see attached image
+after click test.xlsx size = 94 K 
+after click test_SAVED_OK size = 94 K
+after click test_SAVED_20260920_151931 size = 94 K
+after click test_SAVED_20260920_152023 size = 94 K
+it response: SAVE_OK C:\Users\User\Downloads\test.xlsx save_rebuild_bytesio_v4 ui_writes=11 how=disk_clean before=95756 after=95769 proof=None=None sidecar=C:\Users\User\Downloads\test_SAVED_20260920_152023.xlsx
+it response: SAVE_OK C:\Users\User\Downloads\test.xlsx
+test.xlsx after save, loss all the selection manu in all cells, it create a "Sheet" for add data
+it should write at sheet "運動"
+it did not save Excel properly
+what is your suggestions
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for "儲存 Simpan" 
+before test.xlsx size = 870 K
+add data
+when click "儲存 Simpan", got error, see attached image
+after click test.xlsx size = 870 K 
+after click test_SAVED_OK size = 870 K
+after click test_SAVED_20260920_154447 size = 870 K
+I think, it did not save test.xlsx and test_SAVED_OK.xlsx   
+I think you need to refresh Excel before save
+I suggest
+1. C:\Users\User\Downloads\mode_1.xlsx and C:\Users\User\Downloads\mode_2.xlsx are the same
+2. run mode_1.xls add data at sheet "運動" A5, C5, E5, G5, I5, K5, click "儲存 Simpan"
+2.1 record every step before click "儲存 Simpan"
+3. run mode_2.xls add data at sheet "運動" A5, C5, E5, G5, I5, K5, click "GUI: 圖表"
+3.1 record every step before click "GUI: 圖表"
+4. compare every step between mode_1.xlsx and mode_2.xlsx
+5. figure out which step is the difference
+6. fix the problem
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+1. GUI "儲存 Simpan" works
+2. when click GUI "另存新檔 Simpan Sebagai" : It failed to Save File as
+3. see attached image
+4. use codes in GUI "儲存 Simpan" for  Save File as 
+5. test code using C:\Users\User\Downloads\test.xlsx
+6. do not change any other codes and only codes has to do "this error"
+7. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+8. just do it, fix the problem
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for "儲存 Simpan"
+if input Excel is test
+when click "儲存 Simpan"
+it create 2 more extra files for debug, test_SAVED_OK.xlsx and test_SAVED_20260920_193511
+that is base-name_SAVED_OK.xlsx, base-name_SAVED_date_time.xlsx
+remove base-name_SAVED_OK.xlsx, base-name_SAVED_date_time.xlsx
+1. test code using C:\Users\User\Downloads\test.xlsx
+2. do not change any other codes and only codes has to do "this error"
+3. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+4. just do it, fix the problem
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+in GUI "Gmail 傳送 Excel": the Excel file name is hard coded, set the Excel file name as the input Excel file name
+see attached image
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+###########
+
+1. When click "重置欄/列 Atur ulang Kolom/Baris" 
+2. Got error: "SheetFit._fit_title_row() takes 6 positional arguments but 7 were given"
+3. It took to long to fix
+4. rebuild  "重置欄/列 Atur ulang Kolom/Baris" fron scratch, you can use previous codes
+
+5. at the 1st row, it show the title that have different font size compare to 2 row down
+so, do the 1st row based on the on the font size at the 1st row cell width and height
+from 2 row down, it reset the cell width and height based on the font size, so there is no cutoff the text in cell
+so, do the 2nd row to the last row based on the on the font size at the cell width and height from the 2nd row to the last row  
+
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+GUI "重置欄/列: Reset Row/Column", it failed to Reset Row/Column
+1. When click "重置欄/列 Atur ulang Kolom/Baris" 
+2. Got error: "SheetFit._fit_title_row() takes 6 positional arguments but 7 were given"
+3. rebuild  "重置欄/列 Atur ulang Kolom/Baris" fron scratch
+4. at the 1st row, it show the title that have different font size compare to 2 row down
+5. so, do the 1st row based on the on the font size at the 1st row cell width and height
+6. from 2 row down, it reset the cell width and height based on the font size, so there is no cutoff the text in cell
+so, do the 2nd row to the last row based on the on the font size at the cell width and height from the 2nd row to the last row  
+7. test code using C:\Users\User\Downloads\test.xlsx
+8. do not change any other codes and only codes has to do "this error"
+9. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+10. just do it, fix the problem
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+###########
+1. When click "重置欄/列：所有頁面 Atur ulang Kolom/Baris: Semua halaman" 
+2. Got error: "SheetFit._fit_title_row() takes 6 positional arguments but 7 were given"
+3. It took to long to fix
+4. rebuild  "重置欄/列：所有頁面 Atur ulang Kolom/Baris" fron scratch, you can use previous codes
+
+5. at the 1st row, it show the title that have different font size compare to 2 row down
+so, do the 1st row based on the on the font size at the 1st row cell width and height
+from 2 row down, it reset the cell width and height based on the font size, so there is no cutoff the text in cell
+so, do the 2nd row to the last row based on the on the font size at the cell width and height from the 2nd row to the last row  
+
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+###########
+1. When click "儲存 Simpan" 
+2. Got error: "type object 'SheetFit' has no attribute 'cells'"
+4. It took to long to fix
+5. rebuild  "儲存 Simpa" fron scratch, you can use previous codes
+
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+###########
+1. When click "另存新檔 Simpan Sebagai" 
+2. Got error: "type object 'SheetFit' has no attribute 'cells'"
+4. It took to long to fix
+5. rebuild  "另存新檔 Simpan Sebagai" fron scratch, you can use previous codes
+
+7. do not change any other codes and only codes has to do "this error"
+8. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+9. just do it, fix the problem
+10. test Excel file (C:\Users\User\Downloads\Berkas Latihan 練習檔案.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+0. add a horiziontal scroller at Sheet "運動, 清潔, 飲食, 用藥, 血壓, Lists" to see data better in left and right 
+1. test code using C:\Users\User\Downloads\test.xlsx
+2. do not change any other codes and only codes has to do "this error"
+3. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+1. set horiziontal scroller at Sheet "運動, 清潔, 飲食, 用藥, 血壓, Lists, Plot" 
+1.1 the box around horiziontal scroller with color of light cyan
+1.2 the line thickness box with thin thickness
+2. test code using C:\Users\User\Downloads\test.xlsx
+3. do not change any other codes and only codes has to do "this error"
+4. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+1. when start app, it print a lot of message at command window:
+APP7_SAVE_FIX OK save_rebuild_bytesio_v9 from C:\Users\User\Desktop\app7\temp_exe\save_rebuild.py
+1.1 remove text: "APP7_SAVE_FIX OK save_rebuild_bytesio_v9 from C:\Users\User\Desktop\app7\temp_exe\save_rebuild.py"
+2. test code using C:\Users\User\Downloads\test.xlsx
+3. do not change any other codes and only codes has to do "this error"
+4. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+0. attache image shown 
+0.1 Current Sheet Name and Scroller Bar and Box around Scroller Bar Position
+0.2 modified Current Sheet Name and Scroller Bar and Box around Scroller Bar Position
+1. set horiziontal scroller at Sheet "運動, 清潔, 飲食, 用藥, 血壓, Lists, Plot" 
+1.1 smaller size of Box around Scroller Bar
+1.2 Box around Scroller Bar is very close tcroller Bar
+1.3 do not change size of Scroller Bar
+1.4 move Scroller Bar and Box around Scroller Bar close to sheet name "運動, 清潔, 飲食, 用藥, 血壓, Lists, Plot" 
+1.1 smaller size of Box around Scroller Bar
+3. do not change any other codes and only codes has to do "this error"
+4. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+
+https://github.com/steveGau/app7
+
+Committed all files on main (40d2b6b)
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for"GUI "Gmail 傳送 Excel",it send email,
+add this gmails to send
+1. ghpiu0661@gmail.com
+2. ghjane5168@gmail.com
+3. a290772@gmail.com
+4. do not change any other codes and only codes has to do receivers in "Gmail 傳送 Excel"
+
+ghpiu0661@gmail.com
+[redacted]
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+0. for GUI "退出"
+1. when click GUI "退出", it save ane exit
+2. change when click GUI "退出", it exit without save Excel file
+3. do not change any other codes and only codes has to do ""退出""
+4. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+when click GUI "儲存", I think Cell G5 "110" is click and it from a section list, fix and tell me why, I can not save
+
+Save proof is reading G5 from the wrong sheet (getting a time). 
+I'll find that check and fix it to use the active sheet (血壓).
+Save wrote 110 to 血壓!G5; proof was reading 運動!G5 (02:19:33). 
+Updating the temp_exe save proof to check the active sheet.
+Why it failed: Save did write 110 to 血壓!G5. 
+The check afterward looked at 運動!G5, which is the time 02:19:33, and wrongly reported a save failure. 
+The list pick for heartbeat was fine.
+Fix: Save proof now verifies the edited sheet (and scans other sheets for a match) instead of defaulting to 運動.
+Restart the app and click 儲存 again.
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for"GUI "Gmail 傳送 Excel", to send email,
+when click "GUI "Gmail 傳送 Excel"
+1. save input Excel file to keep all new input data
+2. additional codes to convert input Excel file to PDF file
+3. send both Excel file to PDF file to Gmail Receivers
+4. do not change any other codes and only codes has to do receivers in "Gmail 傳送 Excel", "convert input Excel file to PDF file"
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for"GUI "Gmail 傳送 Excel", to send email,
+since PDF file have some issues to have very large Excel file, redo codes in "GUI "Gmail 傳送 Excel",
+when click "GUI "Gmail 傳送 Excel"
+1. keep "save input Excel file to keep all new input data"
+2. disable "codes to convert input Excel file to PDF file"
+3. only send Excel file to Gmail Receivers (NO PDF file )
+4. do not change any other codes and only codes has to do receivers in "Gmail 傳送 Excel", "convert input Excel file to PDF file"
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+in C:\Users\User\Downloads\2.xlsx
+copy the equation 'in sheet 運動, column "運動時間 Waktu berolahraga". to  'in sheet 睡眠, column "睡眠時間 Waktu berolahraga".
+copy the equation 'in sheet 運動, column "開始時間 Waktu mulai". to  'in sheet 睡眠, column "開始時間 Waktu mulai".
+copy the equation 'in sheet 運動, column "結束時間 Waktu berakhir". to  'in sheet 睡眠, column "結束時間 Waktu berakhir".
+
+the time format is "hh:mm:ss" in sheet 運動, column "開始時間 Waktu mulai"
+the time format is "hh:mm:ss" in sheet 運動, column "開始時間 Waktu mulai"
+the time format is "hh:mm" in sheet 睡眠, column "開始時間 Waktu mulai"
+the time format is "hh:mm" in sheet 睡眠, column "開始時間 Waktu mulai"
+
+it create problem in in sheet 睡眠, column "睡眠時間 Waktu berolahraga" that did not work
+"=IF(OR(E2="",G2=""),"",IFERROR(TEXT(MOD(IF(ISNUMBER(G2),G2,TIMEVALUE(G2))-IF(ISNUMBER(E2),E2,TIMEVALUE(E2)),1),"hh:mm"),""))"
+
+set 
+the time format is "hh:mm:ss" in sheet 睡眠, column "開始時間 Waktu mulai"
+the time format is "hh:mm:ss" in sheet 睡眠, column "開始時間 Waktu mulai"
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+in sheet 運動, column "運動時間 Waktu berolahraga"
+column "開始時間 Waktu mulai"
+column "結束時間 Waktu berakhir"
+
+in sheet 睡眠, column "睡眠時間 Waktu berolahraga"
+column "開始時間 Waktu mulai"
+column "結束時間 Waktu berakhir"
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+error:
+input Excel: 1.xlsx 
+when click GUI "儲存" 
+it want to save to Berkas Latihan 練習檔案.xlsx
+
+input Excel: 1.xlsx 
+when clcik "儲存並退出: 
+it want to save to Berkas Latihan 練習檔案.xlsx
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+if no adding data in the Excel, it save o.k.: see image 4
+if adding data in the Excel, it save not o.k.: see image 5
+do not change any other codes and only codes has to do "儲存"
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+if no adding data in the Excel, it save o.k.: 
+if adding data in the Excel, some time it save ok and some tiem save not o.k.: 
+it is not stabe, I do not kone no why
+could test C:\Users\User\Downloads\1.xlsx and try edit 
+in sheet 睡眠, 
+in row 5, 6, 7
+column "開始時間 Waktu mulai"
+column "結束時間 Waktu berakhir"
+column "睡眠時間 Waktu berolahraga"
+do not change any other codes and only codes has to do "儲存"
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+for GUI: 圖表 in sheet "睡眠"
+1. add codes to plot data in column "睡眠時間 Waktu berolahraga"
+01:01:03
+02:12:32
+10:47:46
+the time format is "hh:mm:ss"
+2. do not change any other codes and only codes has to do "GUI: 圖表, 睡眠時間"
+3. keep  codes for "Gmail Excel" and do over write codes for "Gmail Excel", 
+4. just do it, fix the problem
+5. test Excel file C:\Users\User\Downloads\1.xlsx
+
+for GUI: 圖表 in sheet "睡眠"
+1. I did not see "睡眠時間 plot" in "Plot" sheet in in APP7
+2. I can see "睡眠時間 plot" in 1.xlsx
+3. So, fix "睡眠時間 plot" in "Plot" sheet in in APP7
+4. 4. also change "睡眠時間" unit from second to hour, in data and plots in sheet "Plot"
+
+
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+when click GUI "另存新檔 Simpan Sebagai"
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ 
+1. I have files and folder commit to git and to push main to GitHub. 
+1.1 this is the AI prompt command I use for the 1st Commit
+1.2 Commit all files and folder "C:\Users\User\Desktop\app7\" to git and to push main to GitHub.
+2.if I Commit all files and folder to git and to push main to GitHub.
+3. will it overwrite previous version, or keep old version and create a new version
+3.1 what is the 2nd Commit command I should use to create nerversion
+ 
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+Create A ReadeMe.md
+I want to keep old version in git and GitHub and create new version
+do not overwrite old version in git and GitHub
+Commit all files and folder "C:\Users\User\Desktop\app7\" to git and to push main to GitHub.
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+Create A ReadeMe.md
+Commit all files and folder "C:\Users\a2907\Desktop\app8" to git and to push main to GitHub.
