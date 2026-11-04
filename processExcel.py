@@ -37,21 +37,6 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
-
-def _configure_stdio() -> None:
-    """This PC's console is cp1252 and cannot print the Traditional Chinese log."""
-    for stream in (sys.stdout, sys.stderr):
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure is None:
-            continue
-        try:
-            reconfigure(encoding="utf-8", errors="replace")
-        except (OSError, ValueError):
-            pass
-
-
-_configure_stdio()
-
 FILE_RE = re.compile(r"^(\d{4})(\d{2})(\d{2})\.xlsx$", re.IGNORECASE)
 QUESTION_MARKS = {"?", "？"}
 CLOCK_RE = re.compile(r"^(\d{1,2}):(\d{2})(?::(\d{2}))?$")
@@ -82,6 +67,9 @@ THIN = Border(
 EXERCISE_STRIDE = 4
 BP_STRIDE = 5
 SLEEP_STRIDE = 5
+WATER_STRIDE = 4
+WATER_HEADERS = ["喝水", "喝水日期", "喝水時間", "喝水量(杯)"]
+CUP_FRACTION_RE = re.compile(r"(\d+(?:\.\d+)?)\s*/\s*(\d+(?:\.\d+)?)")
 
 
 @dataclass
@@ -442,6 +430,299 @@ def extract_sleep(path: Path, worksheet, cached=None) -> dict | None:
         ],
         "rows": parsed,
     }
+
+
+def parse_cups(value) -> float | None:
+    """Parse a cup amount. '1/6' is one sixth of a cup. '?' is skipped."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if is_missing(value):
+        return None
+    text = str(value).strip()
+    fraction = CUP_FRACTION_RE.search(text)
+    if fraction:
+        denominator = float(fraction.group(2))
+        if denominator == 0:
+            return None
+        return float(fraction.group(1)) / denominator
+    return parse_number(text)
+
+
+def format_hhmm(value) -> str | None:
+    text = format_clock(value)
+    if text is None:
+        return None
+    return text[:5]
+
+
+def extract_water(path: Path, worksheet, cached=None) -> dict | None:
+    """Rows on 清潔 up to '?', mapped to 喝水 / 喝水日期 / 喝水時間 / 喝水量(杯)."""
+    _header, rows = load_table(worksheet, 7, cached)
+    parsed = []
+    for row in rows:
+        cups = parse_cups(cell_at(row, 7))
+        when = parse_date(cell_at(row, 3)) or file_date(path)
+        clock = format_hhmm(cell_at(row, 5))
+        if when is None and clock is None and cups is None:
+            continue
+        parsed.append({"label": "喝水", "date": when, "time": clock, "cups": cups})
+    if not parsed:
+        return None
+    stamp = file_date(path) or next((row["date"] for row in parsed if row["date"]), None)
+    return {
+        "legend": date_label(stamp, path.stem),
+        "date_label": date_label(stamp, path.stem),
+        "headers": list(WATER_HEADERS),
+        "rows": parsed,
+    }
+
+
+def read_water(path: Path) -> tuple[dict | None, list[str]]:
+    messages = []
+    block = None
+    workbook = load_workbook(path, data_only=False, read_only=True)
+    cached_book = load_workbook(path, data_only=True, read_only=True)
+    try:
+        if "清潔" not in workbook.sheetnames:
+            messages.append(f"{path.name}: sheet 清潔 not found, skipped")
+        else:
+            cached = cached_book["清潔"] if "清潔" in cached_book.sheetnames else None
+            block = extract_water(path, workbook["清潔"], cached)
+    finally:
+        workbook.close()
+        cached_book.close()
+    count = 0 if block is None else len(block["rows"])
+    messages.append(f"{path.name}: 喝水量 {count}")
+    return block, messages
+
+
+def add_water_sheets(workbook: Workbook, plots: list[dict], blocks: list[dict], style: PlotStyle) -> None:
+    """Add 喝水量 and 喝水量 Plot. Existing sheets are left as they are."""
+    if not blocks:
+        return
+    if workbook.sheetnames == ["Extract"]:
+        sheet = workbook.active
+        sheet.title = "喝水量"
+    else:
+        sheet = workbook.create_sheet("喝水量")
+    write_record_sheet(
+        sheet,
+        blocks,
+        WATER_STRIDE,
+        [(0, "label", "text"), (1, "date", "date"), (2, "time", "text"), (3, "cups", "decimal")],
+    )
+    plot_sheet = workbook.create_sheet("喝水量 Plot")
+    plot_sheet._chart_writer = SheetWriter(plot_sheet)
+    totals = daily_totals(blocks, "cups")
+    counts = daily_counts(blocks, "cups")
+    specs = [
+        ("全部喝水量-日期", "日期", "全部喝水量", *spread(totals, "全部喝水量"), True),
+        ("全部喝水量次數-日期", "日期", "全部喝水量次數", *spread(counts, "全部喝水量次數"), True),
+    ]
+    anchors = chart_anchors(sum(1 for spec in specs if spec[3] and spec[4]), style.height_cm)
+    anchor_index = 0
+    for title, xlabel, ylabel, categories, series, rotate in specs:
+        if not categories or not series:
+            continue
+        add_line_chart(plot_sheet, anchors[anchor_index], title, xlabel, ylabel, categories, series, style, rotate)
+        plots.append(plot_spec(title, xlabel, ylabel, categories, series, rotate))
+        anchor_index += 1
+
+
+def plain_text(value) -> str | None:
+    if is_missing(value):
+        return None
+    return str(value).strip()
+
+
+def _record_block(path: Path, rows: list[dict], headers: list[str]) -> dict | None:
+    if not rows:
+        return None
+    stamp = file_date(path) or next((row["date"] for row in rows if row["date"]), None)
+    return {
+        "legend": date_label(stamp, path.stem),
+        "date_label": date_label(stamp, path.stem),
+        "headers": headers,
+        "rows": rows,
+    }
+
+
+def extract_excretion(path: Path, worksheet, cached=None) -> dict | None:
+    """排洩 rows above '?'. Date and time are kept; '?' measurements are left blank.
+
+    A row is kept when any measurement is present. Template rows that only
+    repeat the default date and time are skipped.
+    """
+    header, rows = load_table(worksheet, 13, cached)
+    parsed = []
+    for row in rows:
+        record = {
+            "date": parse_date(cell_at(row, 1)) or file_date(path),
+            "time": format_hhmm(cell_at(row, 3)),
+            "stool": plain_text(cell_at(row, 5)),
+            "urine": plain_text(cell_at(row, 7)),
+            "color": plain_text(cell_at(row, 9)),
+            "diarrhea": plain_text(cell_at(row, 11)),
+            "pain": plain_text(cell_at(row, 13)),
+        }
+        if not any(record[key] is not None for key in ("stool", "urine", "color", "diarrhea", "pain")):
+            continue
+        parsed.append(record)
+    return _record_block(
+        path,
+        parsed,
+        [
+            header_text(header, 1, "排洩日期\nTanggal ekskres"),
+            header_text(header, 3, "排洩時間\nWaktu ekskresi"),
+            header_text(header, 5, "大便量\nVolume feses)"),
+            header_text(header, 7, "小便量\nVolume urin"),
+            header_text(header, 9, "小便顏色改變\nPerubahan warna urin"),
+            header_text(header, 11, "拉肚子\nDiare"),
+            header_text(header, 13, "肚子痛\nSakit perut"),
+        ],
+    )
+
+
+def extract_body(path: Path, worksheet, cached=None) -> dict | None:
+    """身體情況 rows above '?'. '?' observations are left blank and do not keep a row."""
+    header, rows = load_table(worksheet, 11, cached)
+    parsed = []
+    for row in rows:
+        record = {
+            "date": parse_date(cell_at(row, 1)) or file_date(path),
+            "sleep": plain_text(cell_at(row, 3)),
+            "cry": plain_text(cell_at(row, 5)),
+            "mood": plain_text(cell_at(row, 7)),
+            "walk": plain_text(cell_at(row, 9)),
+            "voice": plain_text(cell_at(row, 11)),
+        }
+        if not any(record[key] is not None for key in ("sleep", "cry", "mood", "walk", "voice")):
+            continue
+        parsed.append(record)
+    return _record_block(
+        path,
+        parsed,
+        [
+            header_text(header, 1, "身體情況日期\nTanggal kondisi fisik"),
+            header_text(header, 3, "睡眠\nTidur"),
+            header_text(header, 5, "哀叫\nRatapan"),
+            header_text(header, 7, "情緒\nemosi"),
+            header_text(header, 9, "走路力量\nkekuatan berjalan"),
+            header_text(header, 11, "說話聲音\nsuara"),
+        ],
+    )
+
+
+def read_condition(path: Path) -> tuple[dict | None, dict | None, list[str]]:
+    """Read 排洩 and 身體情況. Missing sheets are skipped."""
+    messages = []
+    excretion = body = None
+    workbook = load_workbook(path, data_only=False, read_only=True)
+    cached_book = load_workbook(path, data_only=True, read_only=True)
+    try:
+        sheets = set(workbook.sheetnames)
+
+        def cached_sheet(name: str):
+            if name in cached_book.sheetnames:
+                return cached_book[name]
+            return None
+
+        if "排洩" in sheets:
+            excretion = extract_excretion(path, workbook["排洩"], cached_sheet("排洩"))
+        else:
+            messages.append(f"{path.name}: sheet 排洩 not found, skipped")
+        if "身體情況" in sheets:
+            body = extract_body(path, workbook["身體情況"], cached_sheet("身體情況"))
+        else:
+            messages.append(f"{path.name}: sheet 身體情況 not found, skipped")
+    finally:
+        workbook.close()
+        cached_book.close()
+    messages.append(
+        f"{path.name}: 排洩 {0 if excretion is None else len(excretion['rows'])}, "
+        f"身體情況 {0 if body is None else len(body['rows'])}"
+    )
+    return excretion, body, messages
+
+
+def _take_output_sheet(workbook: Workbook, name: str) -> Worksheet:
+    if workbook.sheetnames == ["Extract"]:
+        sheet = workbook.active
+        sheet.title = name
+        return sheet
+    return workbook.create_sheet(name)
+
+
+def _one_line_header(text: str) -> str:
+    """Turn a two-line Chinese / Indonesian title into one line."""
+    return text.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+
+
+def _write_condition_sheet(worksheet: Worksheet, blocks: list[dict], fields: list[tuple]) -> None:
+    """One header row, then every file's rows stacked in those columns. No plot data."""
+    worksheet.freeze_panes = "A2"
+    headers = [_one_line_header(blocks[0]["headers"][slot]) for slot, _key, _kind in fields]
+    fill = PatternFill("solid", fgColor=HEADER_COLORS[0])
+    header_font = Font(name=FONT_NAME, bold=True, color="FFFFFF", size=11)
+    for index, title in enumerate(headers, start=1):
+        cell = worksheet.cell(1, index, title)
+        cell.font = header_font
+        cell.fill = fill
+        cell.alignment = Alignment(wrap_text=False, vertical="center", horizontal="center")
+        cell.border = THIN
+        width = sum(2 if ord(char) > 127 else 1 for char in title) + 2
+        worksheet.column_dimensions[get_column_letter(index)].width = min(max(width, 14), 48)
+    row_index = 2
+    body_font = Font(name=FONT_NAME, size=11)
+    for block in blocks:
+        for record in block["rows"]:
+            for index, (_slot, key, kind) in enumerate(fields, start=1):
+                value = record[key]
+                if value is None:
+                    continue
+                if kind == "date":
+                    cell = worksheet.cell(row_index, index, date_label(value, ""))
+                else:
+                    cell = worksheet.cell(row_index, index, value)
+                cell.font = body_font
+                cell.border = THIN
+                cell.alignment = Alignment(vertical="center", wrap_text=False)
+            row_index += 1
+
+
+def add_condition_sheets(workbook: Workbook, excretion: list[dict], body: list[dict]) -> None:
+    """Add 排洩 and 身體情況 as one table each. No plot sheet and no chart is created."""
+    if excretion:
+        sheet = _take_output_sheet(workbook, "排洩")
+        _write_condition_sheet(
+            sheet,
+            excretion,
+            [
+                (0, "date", "date"),
+                (1, "time", "text"),
+                (2, "stool", "text"),
+                (3, "urine", "text"),
+                (4, "color", "text"),
+                (5, "diarrhea", "text"),
+                (6, "pain", "text"),
+            ],
+        )
+    if body:
+        sheet = _take_output_sheet(workbook, "身體情況")
+        _write_condition_sheet(
+            sheet,
+            body,
+            [
+                (0, "date", "date"),
+                (1, "sleep", "text"),
+                (2, "cry", "text"),
+                (3, "mood", "text"),
+                (4, "walk", "text"),
+                (5, "voice", "text"),
+            ],
+        )
 
 
 def read_workbook(path: Path) -> tuple[dict | None, dict | None, dict | None, list[str]]:
@@ -906,28 +1187,46 @@ def process_folder(folder, style: PlotStyle | None = None, output_dir=None) -> P
     exercise: list[dict] = []
     bp: list[dict] = []
     sleep: list[dict] = []
+    water: list[dict] = []
+    excretion: list[dict] = []
+    body: list[dict] = []
     messages = [f"Folder: {folder}", f"Files: {', '.join(path.name for path in files)}"]
     for path in files:
         try:
             one_exercise, one_bp, one_sleep, notes = read_workbook(path)
+            one_water, water_notes = read_water(path)
+            one_excretion, one_body, condition_notes = read_condition(path)
         except Exception as exc:
             messages.append(f"{path.name}: skipped ({exc})")
             continue
         messages.extend(notes)
+        messages.extend(water_notes)
+        messages.extend(condition_notes)
         if one_exercise:
             exercise.append(one_exercise)
         if one_bp:
             bp.append(one_bp)
         if one_sleep:
             sleep.append(one_sleep)
+        if one_water:
+            water.append(one_water)
+        if one_excretion:
+            excretion.append(one_excretion)
+        if one_body:
+            body.append(one_body)
 
-    if not exercise and not bp and not sleep:
-        raise ValueError("No 運動, 血壓, or 睡眠 data was found before the '?' rows.")
+    if not exercise and not bp and not sleep and not water and not excretion and not body:
+        raise ValueError("No 運動, 血壓, 睡眠, 喝水量, 排洩, or 身體情況 data was found before the '?' rows.")
 
     legend_for(exercise)
     legend_for(bp)
     legend_for(sleep)
+    legend_for(water)
+    legend_for(excretion)
+    legend_for(body)
     workbook, plots = build_workbook(exercise, bp, sleep, style)
+    add_water_sheets(workbook, plots, water, style)
+    add_condition_sheets(workbook, excretion, body)
     destination = Path(output_dir) if output_dir else folder / "output"
     destination.mkdir(parents=True, exist_ok=True)
     excel_path = destination / "Extract.xlsx"
@@ -937,11 +1236,11 @@ def process_folder(folder, style: PlotStyle | None = None, output_dir=None) -> P
     except PermissionError as exc:
         raise PermissionError(f"Cannot write {excel_path}. Close the file if it is open in Excel.") from exc
     intro = (
-        "運動時間 is minutes. 運動距離 is meters. 睡眠時間 is hours. "
+        "運動時間 is minutes. 運動距離 is meters. 睡眠時間 is hours. 喝水量 is cups. "
         "Rows at and below '?' are omitted. Missing values are left blank and are not drawn."
     )
     write_plotly(plot_path, plots, style, intro)
-    messages.append("運動時間 is stored in minutes. 運動距離 is stored in meters. 睡眠時間 is stored in hours.")
+    messages.append("運動時間 is stored in minutes. 運動距離 is stored in meters. 睡眠時間 is stored in hours. 喝水量 is stored in cups.")
     messages.append(f"Saved {excel_path}")
     messages.append(f"Saved {plot_path}")
     return ProcessResult(excel_path, plot_path, messages)
@@ -992,7 +1291,7 @@ class App(tk.Tk):
             ttk.Entry(style_box, textvariable=variable, width=10).grid(row=row, column=col * 2 + 1, sticky="w", pady=6)
 
         hint = (
-            "Reads YYYYMMDD.xlsx, sorted by date. Sheets 運動, 血壓, and 睡眠 are copied "
+            "Reads YYYYMMDD.xlsx, sorted by date. Sheets 運動, 血壓, 睡眠, and 清潔 (喝水量) are copied "
             "until the row above '?'. Output: output\\Extract.xlsx and output\\Extract_plots.html."
         )
         ttk.Label(frame, text=hint, wraplength=700, justify="left").pack(fill="x", padx=12, pady=4)
