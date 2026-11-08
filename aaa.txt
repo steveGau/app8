@@ -1,36 +1,44 @@
-4. extarct data at sheet:
-4.1 sheet "睡眠" 
-4.2 extract data at Column A "睡眠 Tidur" from row 1 to a row above chacter "?" and set "nrow" use the last row number
-4.3 get data from row at column C, E, G, I or "睡眠 Tidur","日期 Tanggal","開始時間 Waktu mulai","結束時間 Waktu berakhir","睡眠時間 Waktu berolahraga"
-where Column E, G, I with date format hh:mm:ss
+0. create a sheet "喝水量" in Extract.xlsx
+set title in A1 "喝水" in sheet "喝水量"
+set title in B1 "喝水日期" in sheet "喝水量"
+set title in C1 "喝水時間" in sheet "喝水量"
+set title in D1 "喝水量(杯)" in sheet "喝水量" 
 
-4.4.4 
-create a sheet "睡眠"
-for the 1st input excel file 
-save data in Column A "睡眠", to column 1, at sheet "睡眠" and keep title at "A1"
-save data in Column C "日期", to column 2 at sheet "睡眠" at "C1""
-save data in Column E "開始時間", to column 3 at sheet "睡眠" at "E1"
-save data in Column G "結束時間", to column 4 at sheet "睡眠" at "G1"
-In "睡眠時間"="結束時間"-"開始時間", and convert time fomat from hh:mm:ss to hours
-save convert data from Column I "睡眠時間", to column 5 at sheet "睡眠" at "I1"
-
+1. work on the 1st input excel file
+1.1 sheet extarct data at sheet: sheet "清潔" from the 1st input excel file
+1.2 get number of data in 1st column: extract data at Column A "清潔 " from row 1 to a row above chacter "?" and set "nrow" use the last row number
+1.3 based on "nrow": get data from row at column C, E, G or "清潔日期","清潔時間","喝水量(杯)"
+1.3.1 where Column E with date format hh:mm
+1.4 process the extarcted data from sheet "清潔" in the 1st input excel file to sheet "清潔" in Extract.xlsx 
+save data in Column C "清潔日期" in 1st input excel file , to column 2 at sheet "喝水量" from cell "C2"
+save data in Column E "喝水時間" in 1st input excel file , to column 3 at sheet "喝水量" from cell "E2"
+save data in Column G "結束時間" in 1st input excel file , to column 4 at sheet "喝水量" from cell "G2"
+set data "喝水" to in Column 1  from 1st row to nrow
+ 
 for the 2nd input excel file 
-save data in Column A "睡眠", to column 1+5, at sheet "睡眠" and keep title at "A1"
-save data in Column C "日期", to column 2+5 at sheet "睡眠" at "C1""
-save data in Column E "開始時間", to column 3+5 at sheet "睡眠" at "E1"
-save data in Column G "結束時間", to column 4+5 at sheet "睡眠" at "G1"
-save data in Column I "睡眠時間", to column 5+5 at sheet "睡眠" at "I1"
+process the extarcted data from sheet "清潔" in the 2nd input excel file to sheet "清潔" in Extract.xlsx 
+save data in Column C "清潔日期" in 2nd input excel file , to column 2+4 at sheet "喝水量" from cell "C2"
+save data in Column E "喝水時間" in 2nd input excel file , to column 3+4 at sheet "喝水量" from cell "E2"
+save data in Column G "結束時間" in 2nd input excel file , to column 4+4 at sheet "喝水量" from cell "G2"
+set data "喝水" to in Column 1+4  from 1st row to nrow
 
+for the 3rd input excel file
 and so on
-4.4 
-create a sheet "睡眠 Plot"
-4.4.1
-create xy plot "全部睡眠時間"
-calculate 全部睡眠時間 in each "睡眠時間" or sum at column 5, 5+5, 5+2*5, 5+3*5 in sheet "睡眠"
-plot "全部睡眠時間" in sum at column 5, 5+5, 5+2*5, 5+3*5 v.s. "日期" with title "全部睡眠時間-日期", ylabel ="全部睡眠時間", xlabel=日期
 
-4.4.2
-create xy plot "全部睡眠次數"
-calculate 全部睡眠次數 in each "睡眠時間" number or sum "number of 睡眠時間" at column 5, 5+5, 5+2*5, 5+3*5 in sheet "睡眠"
-plot "全部睡眠次數" in sum at column 5, 5+5, 5+2*5, 5+3*5 v.s. "日期" with title "全部睡眠次數-日期", ylabel ="全部睡眠次數", xlabel=日期
+2.
+create a sheet "喝水量 Plot" in Extract.xlsx
+2.1
+create xy plot "全部喝水量時間"
+calculate 全部喝水量 in each "喝水量" or sum at column 4, 4+1*4, 4+2*4, 4+3*4, 4+4*4,.... in sheet "喝水量"
+plot "全部喝水量" in sum at column 4, 4+1*4, 4+2*4, 4+3*4, 4+4*4 v.s. "日期" with title "全部喝水量-日期", ylabel ="全部喝水量", xlabel=日期
 
+2.2
+create xy plot "全部喝水量次數"
+calculate 全部喝水量次數 in each "喝水時間" number or sum "number of 喝水時間" at column 4, 4+4, 4+2*4, 4+3*4 in sheet "喝水量"
+plot "全部喝水量次數" in sum at column 4, 4+4, 4+2*4, 4+3*4 v.s. "喝水日期" with title "全部喝水量次數-日期", ylabel ="全部喝水量次數", xlabel=日期
+
+3. beside plot in excel file, also create all plots using plotly 
+ 
+4. if data is not existed, skip the data
+
+5. do not change any functions or codes, only work on "喝水量"

@@ -1,9 +1,4 @@
 ########
-I have an python app "processExcel.py" and "processExcel.bat" developed at other computer
-1. I copy this app to C:\Users\a2907\Desktop\app8
-2. could you make this app work at this computer at C:\Users\a2907\Desktop\app8
-
-########
 https://cursor.com/loginDeepGrokBot
 open Grok Bot
 
@@ -2079,7 +2074,7 @@ add this gmails to send
 4. do not change any other codes and only codes has to do receivers in "Gmail 傳送 Excel"
 
 ghpiu0661@gmail.com
-[redacted]
+googleghpiu0661
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 0. for GUI "退出"
@@ -2204,13 +2199,152 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 2.if I Commit all files and folder to git and to push main to GitHub.
 3. will it overwrite previous version, or keep old version and create a new version
 3.1 what is the 2nd Commit command I should use to create nerversion
- 
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-Create A ReadeMe.md
-I want to keep old version in git and GitHub and create new version
-do not overwrite old version in git and GitHub
-Commit all files and folder "C:\Users\User\Desktop\app7\" to git and to push main to GitHub.
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-Create A ReadeMe.md
-Commit all files and folder "C:\Users\a2907\Desktop\app8" to git and to push main to GitHub.
+0. create a sheet "喝水量" in Extract.xlsx
+set title in A1 "喝水" in sheet "喝水量"
+set title in B1 "喝水日期" in sheet "喝水量"
+set title in C1 "喝水時間" in sheet "喝水量"
+set title in D1 "喝水量(杯)" in sheet "喝水量" 
+
+1. work on the 1st input excel file
+1.1 sheet extarct data at sheet: sheet "清潔" from the 1st input excel file
+1.2 get number of data in 1st column: extract data at Column A "清潔 " from row 1 to a row above chacter "?" and set "nrow" use the last row number
+1.3 based on "nrow": get data from row at column C, E, G or "清潔日期","清潔時間","喝水量(杯)"
+1.3.1 where Column E with date format hh:mm
+1.4 process the extarcted data from sheet "清潔" in the 1st input excel file to sheet "清潔" in Extract.xlsx 
+save data in Column C "清潔日期" in 1st input excel file , to column 2 at sheet "喝水量" from cell "C2"
+save data in Column E "喝水時間" in 1st input excel file , to column 3 at sheet "喝水量" from cell "E2"
+save data in Column G "結束時間" in 1st input excel file , to column 4 at sheet "喝水量" from cell "G2"
+set data "喝水" to in Column 1  from 1st row to nrow
+ 
+for the 2nd input excel file 
+process the extarcted data from sheet "清潔" in the 2nd input excel file to sheet "清潔" in Extract.xlsx 
+save data in Column C "清潔日期" in 2nd input excel file , to column 2+4 at sheet "喝水量" from cell "C2"
+save data in Column E "喝水時間" in 2nd input excel file , to column 3+4 at sheet "喝水量" from cell "E2"
+save data in Column G "結束時間" in 2nd input excel file , to column 4+4 at sheet "喝水量" from cell "G2"
+set data "喝水" to in Column 1+4  from 1st row to nrow
+
+for the 3rd input excel file
+and so on
+
+2.
+create a sheet "喝水量 Plot" in Extract.xlsx
+2.1
+create xy plot "全部喝水量時間"
+calculate 全部喝水量 in each "喝水量" or sum at column 4, 4+1*4, 4+2*4, 4+3*4, 4+4*4,.... in sheet "喝水量"
+plot "全部喝水量" in sum at column 4, 4+1*4, 4+2*4, 4+3*4, 4+4*4 v.s. "日期" with title "全部喝水量-日期", ylabel ="全部喝水量", xlabel=日期
+
+2.2
+create xy plot "全部喝水量次數"
+calculate 全部喝水量次數 in each "喝水時間" number or sum "number of 喝水時間" at column 4, 4+4, 4+2*4, 4+3*4 in sheet "喝水量"
+plot "全部喝水量次數" in sum at column 4, 4+4, 4+2*4, 4+3*4 v.s. "喝水日期" with title "全部喝水量次數-日期", ylabel ="全部喝水量次數", xlabel=日期
+
+3. beside plot in excel file, also create all plots using plotly 
+ 
+4. if data is not existed, skip the data
+
+5. do not change any functions or codes, only work on "喝水量"
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+update A ReadeMe.md
+I want to keep old version in git and GitHub and create new version
+do not overwrite old version in git and GitHub
+Commit all files and folder "C:\Users\User\Desktop\app8\" to git and to push main to GitHub.
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+1. in C:\Users\User\Desktop\app8, add codes in processExcel.py to process sheet "排洩" and sheet "身體情況" in all *.xlsx in input folder 
+2. process the same way like the other sheet, but without create any plot and sheet for plot in output excel file. also, no plot in output html file 
+3. do not change any other existed codes
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+1. in C:\Users\User\Desktop\app8, add codes in processExcel.py 
+redo format for sheet "排洩" 
+排洩日期  Tanggal ekskres	排洩時間  Waktu ekskresi	大便量 Volume feses)	小便量  Volume urin	小便顏色改變 Perubahan warna urin	拉肚子 Diare	肚子痛   Sakit perut
+2026-11-04	23:38	多: lebih	普通: Normal	沒有: Tidak	沒有: Tidak	沒有: Tidak
+2026-11-04	23:38	多: lebih	普通: Normal	沒有: Tidak	沒有: Tidak	沒有: Tidak
+
+redo format for sheet "身體情況"
+身體情況日期 Tanggal kondisi fisik	睡眠 Tidur	哀叫 Ratapan	 情緒 emosi 	走路力量 kekuatan berjalan	說話聲音 suara
+2026-11-04	好: Bagus	沒有: Tidak	好: Bagus	有: Ya	普通: Normal
+2026-11-04	好: Bagus	沒有: Tidak	好: Bagus	有: Ya	普通: Normal
+
+2. do not change any other existed codes
+
+
+to process sheet "排洩" and sheet "身體情況" in all *.xlsx in input folder 
+2. process the same way like the other sheet, but without create any plot and sheet for plot in output excel file. also, no plot in output html file 
+3. do not change any other existed codes
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+add codes in  processExcel.py 
+the example files for code development is at folder "C:\Users\User\Downloads\test", there are 2 Excel files: 20261016.xlsx,20261017.xlsx
+to get a folder which have Excel files with name 
+1.1 file name example "20261016.xlsx"
+extract data from
+1.2 output columns "C,E,K" in sheet "運動" to 運動
+1.3 output columns "B,D,F" in sheet "清潔" to 清潔
+1.4 output columns "A,E,G" in sheet "飲食" to 飲食 
+1.5 output columns "C,E,G,I" in sheet "飲食" to 飲食 
+1.6 output columns "A,E,G" in sheet "排洩" to 排洩1
+1.7 output columns "A,I,K,M" in sheet "排洩" to 排洩2
+1.8 output columns "A,C,E,F" in sheet "血壓" to 血壓1
+1.9 output columns "A,C,G" in sheet "血壓" to 血壓
+1.10 output columns "A,C,E,G" in sheet "身體情況" to 身體情況1
+1.11 output columns "A,I,K" in sheet "身體情況" to 身體情況2
+2.1 file name example "20261017.xlsx"
+2.2 output columns "C,E,K" in sheet "運動" to 運動
+2.3 output columns "B,D,F" in sheet "清潔" to 清潔
+2.4 output columns "A,E,G" in sheet "飲食" to 飲食 
+2.5 output columns "C,E,G,I" in sheet "飲食" to 飲食 
+2.6 output columns "A,E,G" in sheet "排洩" to 排洩1
+2.7 output columns "A,I,K,M" in sheet "排洩" to 排洩2
+2.8 output columns "A,C,E,F" in sheet "血壓" to 血壓1
+2.9 output columns "A,C,G" in sheet "血壓" to 血壓
+2.10 output columns "A,C,E,G" in sheet "身體情況" to 身體情況1
+2.11 output columns "A,I,K" in sheet "身體情況" to 身體情況2
+keep the same operation until finish read all input excel files
+2. output    "運動" to 運動_1.png , 運動_2.png,運動_3.png,  when the data can not fit to a page
+3. output   "清潔" to 清潔_1.png, 清潔_2.png, 清潔_3.png
+4. output   "飲食" to 飲食_1.png,.....
+5. output  "睡眠" to 睡眠_1.png,.....
+6. output  "排洩" to 排洩_11.png,.....
+7. output  "排洩" to 排洩2_1.png,.....
+8. output  "血壓1" to 血壓1_1.png,.....
+9. output  "血壓2" to 血壓2_1.png,.....
+10. output "身體情況1" to 身體情況1_1.png,.....
+11. output "身體情況2" to 身體情況2_1.png,.....
+12. output all png files in landscape format
+13. create a pdf file from all png files with the same output excel file name
+15. do not change any other existed codes
+
+14. when click GUI "Gmail 傳送 Excel", also send output pdf file
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+do not out all rows data in any sheet to png file:
+the methods to determine the rows to output is based on
+0.1 the cell in row above character "?"
+0.2 the cell in row above empty ""
+the following column meet 0.1 and 0.2 
+2. output columns "K" in sheet "運動" 
+3. output columns "F" in sheet "清潔"  
+4. output columns "G" in sheet "飲食" 
+5. output columns "I" in sheet "睡眠" 
+6. output columns "E" in sheet "排洩" 
+8. output columns "E" in sheet "血壓"
+10. output columns "C" in sheet "身體情況"
+15. do not change any other existed codes
+16. use the example files for code development is at folder "C:\Users\User\Downloads\test", there are 2 Excel files: 20261016.xlsx,20261017.xlsx
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+add codes in  processExcel.py 
+add a GUI "Gmail 傳送 Excel" at the right side of GUI "Process"
+when click GUI "Gmail 傳送 Excel", use Gmail to send Extract.xlsx, Extract.pdf, Extract.html to users
+use GUI "Gmail 傳送 Excel" in C:\Users\User\Desktop\app7\readExcel.py for GUI "Gmail 傳送 Excel" in  C:\Users\User\Desktop\app8
+this users are defined is in C:\Users\User\Desktop\app7\readExcel.py
+do not change any other existed codes
+

@@ -1,0 +1,36 @@
+4. extarct data at sheet:
+4.1 sheet "睡眠" 
+4.2 extract data at Column A "睡眠 Tidur" from row 1 to a row above chacter "?" and set "nrow" use the last row number
+4.3 get data from row at column C, E, G, I or "睡眠 Tidur","日期 Tanggal","開始時間 Waktu mulai","結束時間 Waktu berakhir","睡眠時間 Waktu berolahraga"
+where Column E, G, I with date format hh:mm:ss
+
+4.4.4 
+create a sheet "睡眠"
+for the 1st input excel file 
+save data in Column A "睡眠", to column 1, at sheet "睡眠" and keep title at "A1"
+save data in Column C "日期", to column 2 at sheet "睡眠" at "C1""
+save data in Column E "開始時間", to column 3 at sheet "睡眠" at "E1"
+save data in Column G "結束時間", to column 4 at sheet "睡眠" at "G1"
+In "睡眠時間"="結束時間"-"開始時間", and convert time fomat from hh:mm:ss to hours
+save convert data from Column I "睡眠時間", to column 5 at sheet "睡眠" at "I1"
+
+for the 2nd input excel file 
+save data in Column A "睡眠", to column 1+5, at sheet "睡眠" and keep title at "A1"
+save data in Column C "日期", to column 2+5 at sheet "睡眠" at "C1""
+save data in Column E "開始時間", to column 3+5 at sheet "睡眠" at "E1"
+save data in Column G "結束時間", to column 4+5 at sheet "睡眠" at "G1"
+save data in Column I "睡眠時間", to column 5+5 at sheet "睡眠" at "I1"
+
+and so on
+4.4 
+create a sheet "睡眠 Plot"
+4.4.1
+create xy plot "全部睡眠時間"
+calculate 全部睡眠時間 in each "睡眠時間" or sum at column 5, 5+5, 5+2*5, 5+3*5 in sheet "睡眠"
+plot "全部睡眠時間" in sum at column 5, 5+5, 5+2*5, 5+3*5 v.s. "日期" with title "全部睡眠時間-日期", ylabel ="全部睡眠時間", xlabel=日期
+
+4.4.2
+create xy plot "全部睡眠次數"
+calculate 全部睡眠次數 in each "睡眠時間" number or sum "number of 睡眠時間" at column 5, 5+5, 5+2*5, 5+3*5 in sheet "睡眠"
+plot "全部睡眠次數" in sum at column 5, 5+5, 5+2*5, 5+3*5 v.s. "日期" with title "全部睡眠次數-日期", ylabel ="全部睡眠次數", xlabel=日期
+

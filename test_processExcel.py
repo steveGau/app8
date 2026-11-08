@@ -615,5 +615,311 @@ class ConditionSheetTests(unittest.TestCase):
         return value
 
 
+class PageImageTests(unittest.TestCase):
+    def test_rows_stop_above_question_or_blank(self):
+        rows = [
+            ["選擇運動", None, "運動日期", None, "開始時間", None, None, None, None, None, "運動距離"],
+            ["走路", None, date(2026, 10, 16), None, "08:00:00", None, None, None, None, None, "10米: 10 meter"],
+            ["跑步", None, date(2026, 10, 16), None, "09:00:00", None, None, None, None, None, "20米: 20 meter"],
+            ["模板", None, date(2026, 10, 16), None, "10:00:00", None, None, None, None, None, "?"],
+            ["不該讀", None, date(2026, 10, 16), None, "11:00:00", None, None, None, None, None, "30米: 30 meter"],
+        ]
+        header, kept = app.extract_page_table(rows, (3, 5, 11), 11)
+        self.assertEqual(header[0].split("\n")[0], "運動日期")
+        self.assertEqual(
+            kept,
+            [
+                ["2026-10-16", "08:00:00", "10米: 10 meter"],
+                ["2026-10-16", "09:00:00", "20米: 20 meter"],
+            ],
+        )
+
+        clean = [
+            [None, "清潔日期", None, "清潔時間", None, "喝水量(杯)"],
+            [None, date(2026, 10, 16), None, "23:37", None, "1.5"],
+            [None, date(2026, 10, 16), None, "07:15", None, "1/2"],
+            [None, date(2026, 9, 11), None, "00:00", None, None],
+            [None, date(2026, 9, 11), None, "03:00", None, "9"],
+            [None, date(2026, 9, 11), None, "00:00:00", None, "?"],
+        ]
+        _header, water = app.extract_page_table(clean, (2, 4, 6), 6)
+        self.assertEqual(water, [["2026-10-16", "23:37", "1.5"], ["2026-10-16", "07:15", "1/2"]])
+
+        excretion = [
+            ["排洩日期", None, None, None, "大便量", None, "小便量", None, "顏色", None, "拉肚子", None, "肚子痛"],
+            [date(2026, 10, 16), None, None, None, "多: lebih", None, "普通: Normal", None, "沒有: Tidak", None, "沒有: Tidak", None, "沒有: Tidak"],
+            [date(2026, 9, 16), None, None, None, "?", None, "?", None, "不該讀", None, "不該讀", None, "不該讀"],
+            [date(2026, 9, 17), None, None, None, "", None, "", None, "也不該讀", None, "也不該讀", None, "也不該讀"],
+        ]
+        _header, body = app.extract_page_table(excretion, (1, 5, 7), 5)
+        self.assertEqual(body, [["2026-10-16", "多: lebih", "普通: Normal"]])
+        _header, second = app.extract_page_table(excretion, (1, 9, 11, 13), 5)
+        self.assertEqual(second, [["2026-10-16", "沒有: Tidak", "沒有: Tidak", "沒有: Tidak"]])
+        self.assertNotIn("不該讀", str(second))
+
+    def test_files_stack_in_date_order_and_second_diet_table(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self._save(root / "20261017.xlsx", date(2026, 10, 17), "晚餐食物: Makanan makan malam", "1/2")
+            self._save(root / "20261016.xlsx", date(2026, 10, 16), "早餐食物: Makanan sarapan", "1 1/4")
+            groups = {group["stem"]: group for group in app.collect_page_groups(app.list_dated_workbooks(root))}
+            exercise = groups["運動"]["tables"][0]["rows"]
+            self.assertEqual([row[0] for row in exercise], ["2026-10-16", "2026-10-17"])
+            diet = groups["飲食"]["tables"]
+            self.assertEqual(len(diet), 2)
+            self.assertEqual(diet[0]["letters"], ["A", "E", "G"])
+            self.assertEqual(diet[0]["rows"][0][0], "早餐食物: Makanan sarapan")
+            self.assertEqual(diet[1]["letters"], ["C", "E", "G", "I"])
+            self.assertEqual(diet[1]["rows"][0][2], "1 1/4")
+            self.assertEqual(diet[1]["rows"][1][0], "麵: mi")
+            self.assertEqual(groups["睡眠"]["tables"][0]["letters"], ["C", "E", "G", "I"])
+            self.assertEqual(
+                groups["排洩1"]["tables"][0]["rows"],
+                [
+                    ["2026-10-16", "多: lebih", "普通: Normal"],
+                    ["2026-10-17", "多: lebih", "普通: Normal"],
+                ],
+            )
+            self.assertEqual(groups["排洩2"]["tables"][0]["letters"], ["A", "I", "K", "M"])
+            self.assertEqual(groups["血壓1"]["tables"][0]["letters"], ["A", "C", "E", "F"])
+            self.assertEqual(groups["血壓2"]["tables"][0]["rows"][0][2], "121")
+            self.assertEqual(groups["身體情況1"]["tables"][0]["letters"], ["A", "C", "E", "G"])
+            self.assertEqual(groups["身體情況2"]["tables"][0]["rows"][0][1:], ["有: Ya", "普通: Normal"])
+            self.assertNotIn("不該讀", str(groups["運動"]["tables"][0]["rows"]))
+
+    def test_pack_splits_when_the_next_row_does_not_fit(self):
+        block = {"letter_h": 26, "header_h": 52, "row_heights": [33] * 5}
+        pages = app.pack_page_chunks([block], body_height=26 + 52 + 33 * 3, gap=22)
+        self.assertEqual(len(pages), 2)
+        self.assertEqual([(chunk["row_start"], chunk["row_end"]) for chunk in pages[0]], [(0, 3)])
+        self.assertEqual([(chunk["row_start"], chunk["row_end"]) for chunk in pages[1]], [(3, 5)])
+
+        short = {"letter_h": 26, "header_h": 52, "row_heights": [33]}
+        shared = app.pack_page_chunks([short, short], body_height=400, gap=22)
+        self.assertEqual(len(shared), 1)
+        self.assertEqual(len(shared[0]), 2)
+        tight = app.pack_page_chunks([short, short], body_height=26 + 52 + 33, gap=22)
+        self.assertEqual(len(tight), 2)
+
+    def test_png_pages_are_landscape_and_pdf_uses_excel_name(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self._save(root / "20261016.xlsx", date(2026, 10, 16), "早餐食物: Makanan sarapan", "1 1/4")
+            result = app.process_folder(root)
+            self.assertEqual(result.pdf_path, root / "output" / "Extract.pdf")
+            self.assertTrue(result.pdf_path.is_file())
+            exercise_pages = sorted((root / "output").glob("運動_*.png"))
+            self.assertEqual([path.name for path in exercise_pages], ["運動_1.png"])
+            from PIL import Image
+
+            image = Image.open(exercise_pages[0])
+            self.assertEqual(image.size, (1600, 1132))
+            self.assertGreater(image.size[0], image.size[1])
+            image.close()
+            for stem in ("清潔_1.png", "飲食_1.png", "睡眠_1.png", "排洩1_1.png", "排洩2_1.png", "血壓1_1.png", "血壓2_1.png", "身體情況1_1.png", "身體情況2_1.png"):
+                self.assertTrue((root / "output" / stem).is_file(), stem)
+            self.assertIn(str(result.pdf_path), "\n".join(result.messages))
+
+            wide = Workbook()
+            sheet = wide.active
+            sheet.title = "運動"
+            sheet["C1"] = "運動日期"
+            sheet["E1"] = "開始時間"
+            sheet["K1"] = "運動距離"
+            for row in range(2, 42):
+                sheet.cell(row, 3, date(2026, 10, 16))
+                sheet.cell(row, 5, f"{row:02d}:00:00")
+                sheet.cell(row, 11, f"{row}米: {row} meter")
+            sheet.cell(42, 1, "?")
+            sheet.cell(43, 5, "不該讀")
+            wide.save(root / "20261018.xlsx")
+            wide.close()
+            notes, pdf_path = app.export_page_files(app.list_dated_workbooks(root), root / "output", "Extract")
+            pages = sorted((root / "output").glob("運動_*.png"))
+            self.assertGreaterEqual(len(pages), 2)
+            self.assertTrue(all(page.name.startswith("運動_") for page in pages))
+            self.assertTrue(pdf_path.is_file())
+            self.assertTrue(any("運動_2.png" in note for note in notes))
+            book = load_workbook(result.excel_path)
+            self.assertIn("運動", book.sheetnames)
+            book.close()
+
+    def _save(self, path, when, meal, amount):
+        wb = Workbook()
+        exercise = wb.active
+        exercise.title = "運動"
+        exercise["C1"] = "運動日期\nTanggal Olahraga"
+        exercise["E1"] = "開始時間\nWaktu mulai"
+        exercise["K1"] = "運動距離\nJarak pergerakan"
+        exercise["C2"] = when
+        exercise["E2"] = "23:36:57"
+        exercise["K2"] = "10米: 10 meter"
+        exercise["A3"] = "?"
+        exercise["K4"] = "不該讀"
+
+        clean = wb.create_sheet("清潔")
+        clean["B1"] = "清潔日期\nTanggal pembersihan"
+        clean["D1"] = "清潔時間\nWaktu bersih-bersih"
+        clean["F1"] = "喝水量(杯)\nAsupan air (cangkir)"
+        clean["B2"] = when
+        clean["D2"] = "23:37"
+        clean["F2"] = "1.5"
+        clean["B3"] = date(2026, 9, 11)
+        clean["D3"] = "00:00"
+
+        diet = wb.create_sheet("飲食")
+        diet["A1"] = "飲食健康\nMakan sehat"
+        diet["C1"] = "食物\nMakanan"
+        diet["E1"] = "日期\nTanggal"
+        diet["G1"] = "食物份量(碗)\nPorsi makanan (mangkuk)"
+        diet["I1"] = "2 主食: makanan pokok"
+        diet["A2"] = meal
+        diet["E2"] = when
+        diet["G2"] = amount
+        if amount == "1/2":
+            diet["C2"] = "麵: mi"
+            diet["I2"] = "白米: Beras"
+        diet["A3"] = "?"
+
+        sleep = wb.create_sheet("睡眠")
+        sleep["C1"] = "日期\nTanggal"
+        sleep["E1"] = "開始時間\nWaktu mulai"
+        sleep["G1"] = "結束時間\nWaktu berakhir"
+        sleep["I1"] = "睡眠時間\nWaktu berolahraga"
+        sleep["C2"] = when
+        sleep["E2"] = "23:38:38"
+        sleep["G2"] = "23:39:39"
+        sleep["I2"] = "00:01:01"
+        sleep["A3"] = "?"
+
+        excretion = wb.create_sheet("排洩")
+        excretion["A1"] = "排洩日期\nTanggal ekskres"
+        excretion["E1"] = "大便量\nVolume feses)"
+        excretion["G1"] = "小便量\nVolume urin"
+        excretion["I1"] = "小便顏色改變\nPerubahan warna urin"
+        excretion["K1"] = "拉肚子\nDiare"
+        excretion["M1"] = "肚子痛\nSakit perut"
+        excretion["A2"] = when
+        excretion["E2"] = "多: lebih"
+        excretion["G2"] = "普通: Normal"
+        excretion["I2"] = "沒有: Tidak"
+        excretion["K2"] = "沒有: Tidak"
+        excretion["M2"] = "沒有: Tidak"
+        excretion["A3"] = date(2026, 9, 16)
+        excretion["E3"] = "?"
+        excretion["G3"] = "?"
+
+        pressure = wb.create_sheet("血壓")
+        pressure["A1"] = "健康\nSehat"
+        pressure["C1"] = "量血壓日期\nTanggal pengukuran tekanan darah"
+        pressure["E1"] = "收縮壓, 高壓\nTekanan darah sistolik\ntekanan tinggi"
+        pressure["F1"] = "舒張壓, 低壓\nTekanan darah diastolik\ntekanan rendah"
+        pressure["G1"] = "心跳\nDetak jantung"
+        pressure["A2"] = "早餐前量, 量血壓: Ukur tekanan darah"
+        pressure["C2"] = when
+        pressure["E2"] = 113
+        pressure["F2"] = 119
+        pressure["G2"] = 121
+        pressure["A3"] = "?"
+
+        body = wb.create_sheet("身體情況")
+        body["A1"] = "身體情況日期\nTanggal kondisi fisik"
+        body["C1"] = "睡眠\nTidur"
+        body["E1"] = "哀叫\nRatapan"
+        body["G1"] = "情緒\nemosi"
+        body["I1"] = "走路力量\nkekuatan berjalan"
+        body["K1"] = "說話聲音\nsuara"
+        body["A2"] = when
+        body["C2"] = "好: Bagus"
+        body["E2"] = "沒有: Tidak"
+        body["G2"] = "好: Bagus"
+        body["I2"] = "有: Ya"
+        body["K2"] = "普通: Normal"
+        body["A3"] = date(2026, 9, 16)
+        body["C3"] = "?"
+        body["E3"] = "?"
+        body["G3"] = "?"
+        body["I3"] = "?"
+        body["K3"] = "?"
+        wb.save(path)
+        wb.close()
+
+
+class GmailSendTests(unittest.TestCase):
+    def test_receivers_match_app7(self):
+        self.assertEqual(
+            app.GMAIL_TO,
+            "ghpiu0661@gmail.com,ghjane5168@gmail.com,a290772@gmail.com",
+        )
+        url = app.gmail_compose_url(app.GMAIL_TO, app.GMAIL_SUBJECT, "body")
+        self.assertIn("ghpiu0661%40gmail.com", url)
+        self.assertIn("ghjane5168%40gmail.com", url)
+        self.assertIn("a290772%40gmail.com", url)
+        self.assertIn("mail.google.com/mail/u/0/", url)
+
+    def test_output_files_and_compose_script(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            output = root / "output"
+            output.mkdir()
+            excel = output / "Extract.xlsx"
+            pdf = output / "Extract.pdf"
+            html_path = output / "Extract_plots.html"
+            excel.write_bytes(b"xlsx")
+            pdf.write_bytes(b"pdf")
+            html_path.write_bytes(b"html")
+            files = app.gmail_output_files(root)
+            self.assertEqual([path.name for path in files], ["Extract.xlsx", "Extract.pdf", "Extract.html"])
+            self.assertEqual((output / "Extract.html").read_bytes(), b"html")
+
+            (output / "Extract.html").write_bytes(b"named")
+            files = app.gmail_output_files(root)
+            self.assertEqual(files[2].read_bytes(), b"named")
+
+            captured = {}
+
+            class _Proc:
+                stdout = "GMAIL_OK"
+                stderr = ""
+
+            def runner(command, **kwargs):
+                captured["command"] = command
+                captured["kwargs"] = kwargs
+                captured["script"] = Path(command[-1]).read_text(encoding="utf-8-sig")
+                return _Proc()
+
+            names = app.send_gmail_files(files, runner=runner)
+            script = captured["script"]
+            self.assertEqual(captured["command"][-2], "-File")
+            self.assertGreaterEqual(captured["kwargs"]["timeout"], 60)
+            self.assertIn("ghpiu0661%40gmail.com", script)
+            self.assertIn("ghjane5168%40gmail.com", script)
+            self.assertIn("a290772%40gmail.com", script)
+            self.assertIn("Extract.xlsx", script)
+            self.assertIn("Extract.pdf", script)
+            self.assertIn("Extract.html", script)
+            self.assertIn("SetFileDropList", script)
+            self.assertIn("SetForegroundWindow", script)
+            self.assertIn("mouse_event", script)
+            self.assertIn("SendWait('^v')", script)
+            self.assertIn("Gmail compose window was not found", script)
+            self.assertEqual(names.splitlines(), ["Extract.xlsx", "Extract.pdf", "Extract.html"])
+
+            (output / "Extract.pdf").unlink()
+            with self.assertRaises(FileNotFoundError):
+                app.gmail_output_files(root)
+
+    def test_gmail_button_is_right_of_process(self):
+        window = app.App()
+        try:
+            self.assertEqual(str(window.run_button.cget("text")), "Process")
+            self.assertEqual(str(window.gmail_button.cget("text")), "Gmail 傳送 Excel")
+            self.assertEqual(str(window.gmail_button.master), str(window.run_button.master))
+            self.assertEqual(str(window.run_button.pack_info()["side"]), "left")
+            self.assertEqual(str(window.gmail_button.pack_info()["side"]), "left")
+        finally:
+            window.destroy()
+
+
 if __name__ == "__main__":
     unittest.main()

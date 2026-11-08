@@ -9,9 +9,12 @@ from __future__ import annotations
 import datetime as dt
 import html
 import math
+import os
 import re
+import subprocess
 import sys
 import threading
+import urllib.parse
 import tkinter as tk
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,6 +22,7 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
 from openpyxl import Workbook, load_workbook
+from PIL import Image, ImageDraw, ImageFont
 from openpyxl.chart import LineChart, Reference
 from openpyxl.chart.marker import Marker
 from openpyxl.chart.shapes import GraphicalProperties
@@ -96,6 +100,7 @@ class ProcessResult:
     excel_path: Path
     plot_path: Path
     messages: list[str] = field(default_factory=list)
+    pdf_path: Path | None = None
 
 
 def is_question(value) -> bool:
@@ -1243,7 +1248,645 @@ def process_folder(folder, style: PlotStyle | None = None, output_dir=None) -> P
     messages.append("運動時間 is stored in minutes. 運動距離 is stored in meters. 睡眠時間 is stored in hours. 喝水量 is stored in cups.")
     messages.append(f"Saved {excel_path}")
     messages.append(f"Saved {plot_path}")
-    return ProcessResult(excel_path, plot_path, messages)
+    page_notes, pdf_path = export_page_files(files, destination, excel_path.stem)
+    messages.extend(page_notes)
+    return ProcessResult(excel_path, plot_path, messages, pdf_path)
+
+
+# Landscape A4 pages. Each page repeats the column letters and the header.
+# A later page is written only when the rows do not fit on the page above.
+PAGE_W = 1600
+PAGE_H = 1132
+PAGE_LEFT = 28
+PAGE_RIGHT = 1572
+PAGE_TOP = 63
+PAGE_BOTTOM = 1104
+PAGE_INDEX_W = 58
+PAGE_GAP = 22
+PAGE_BG = (251, 255, 253)
+PAGE_HEADER_BG = (215, 236, 230)
+PAGE_INDEX_HEADER_BG = (231, 243, 239)
+PAGE_INDEX_BG = (247, 251, 250)
+PAGE_GRID = (155, 184, 178)
+PAGE_INK = (16, 36, 40)
+PAGE_LINE = 20
+PAGE_LETTER_H = 26
+PAGE_MIN_HEADER_H = 52
+PAGE_MIN_ROW_H = 33
+_PAGE_FONTS = (
+    Path(r"C:\Windows\Fonts\msjh.ttc"),
+    Path(r"C:\Windows\Fonts\msyh.ttc"),
+    Path(r"C:\Windows\Fonts\mingliu.ttc"),
+    Path(r"C:\Windows\Fonts\simsun.ttc"),
+    Path(r"C:\Windows\Fonts\arial.ttf"),
+)
+
+# stem is the file name. title is the label drawn on the page.
+# parts are (sheet, excel columns). 飲食 is two tables on the same page series.
+# 睡眠 columns follow the sample page: 日期, 開始時間, 結束時間, 睡眠時間.
+PAGE_SPECS = (
+    {"stem": "運動", "title": "運動", "parts": (("運動", (3, 5, 11)),)},
+    {"stem": "清潔", "title": "清潔", "parts": (("清潔", (2, 4, 6)),)},
+    {"stem": "飲食", "title": "飲食", "parts": (("飲食", (1, 5, 7)), ("飲食", (3, 5, 7, 9)))},
+    {"stem": "睡眠", "title": "睡眠", "parts": (("睡眠", (3, 5, 7, 9)),)},
+    {"stem": "排洩1", "title": "排洩", "parts": (("排洩", (1, 5, 7)),)},
+    {"stem": "排洩2", "title": "排洩", "parts": (("排洩", (1, 9, 11, 13)),)},
+    {"stem": "血壓1", "title": "血壓", "parts": (("血壓", (1, 3, 5, 6)),)},
+    {"stem": "血壓2", "title": "血壓", "parts": (("血壓", (1, 3, 7)),)},
+    {"stem": "身體情況1", "title": "身體情況", "parts": (("身體情況", (1, 3, 5, 7)),)},
+    {"stem": "身體情況2", "title": "身體情況", "parts": (("身體情況", (1, 9, 11)),)},
+)
+# A page keeps the rows above the first '?' or blank cell in this column.
+PAGE_STOP_COLUMN = {
+    "運動": 11,
+    "清潔": 6,
+    "飲食": 7,
+    "睡眠": 9,
+    "排洩": 5,
+    "血壓": 5,
+    "身體情況": 3,
+}
+
+
+def _page_font(size: int) -> ImageFont.FreeTypeFont:
+    for path in _PAGE_FONTS:
+        if path.is_file():
+            return ImageFont.truetype(str(path), size=size)
+    raise FileNotFoundError("No font found for the landscape pages. Install Microsoft JhengHei.")
+
+
+def _page_text(value) -> str:
+    """Cell text for a page. Blank and '?' stay blank. Dates use YYYY-MM-DD."""
+    if isinstance(value, str) and value.startswith("="):
+        return ""
+    if is_missing(value):
+        return ""
+    if isinstance(value, dt.datetime):
+        if value.hour == value.minute == value.second == value.microsecond == 0:
+            return value.strftime("%Y-%m-%d")
+        if value.second == 0 and value.microsecond == 0:
+            return value.strftime("%Y-%m-%d %H:%M")
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(value, dt.date):
+        return value.strftime("%Y-%m-%d")
+    if isinstance(value, dt.time):
+        if value.second == 0 and value.microsecond == 0:
+            return f"{value.hour:02d}:{value.minute:02d}"
+        return f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}"
+    if isinstance(value, float) and math.isfinite(value):
+        return str(as_number(value))
+    if isinstance(value, int) and not isinstance(value, bool):
+        return str(value)
+    return str(value).replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+def _page_header(value) -> str:
+    text = _page_text(value)
+    if not text:
+        return ""
+    return "\n".join(line.strip() for line in text.split("\n"))
+
+
+def _page_cell_stops(value) -> bool:
+    """True when this cell is '?' or empty. Rows above it are the page rows."""
+    if value is None:
+        return True
+    if isinstance(value, str):
+        text = value.strip()
+        return text == "" or text in QUESTION_MARKS or set(text) <= QUESTION_MARKS
+    return False
+
+
+def _prefer_page_value(value, cached):
+    if isinstance(value, str) and value.startswith("="):
+        return cached
+    return value
+
+
+def _read_sheet_values(worksheet, cached, max_col: int) -> list[list]:
+    """One pass over a sheet. A read-only worksheet cannot be scanned twice."""
+    limit = min(worksheet.max_row or 1, 5000)
+    cached_rows = []
+    if cached is not None:
+        cached_rows = list(cached.iter_rows(min_row=1, max_row=limit, max_col=max_col, values_only=True))
+    values_rows = []
+    for index, row in enumerate(
+        worksheet.iter_rows(min_row=1, max_row=limit, max_col=max_col, values_only=True),
+        start=1,
+    ):
+        values = list(row)
+        if cached_rows and index - 1 < len(cached_rows):
+            cached_values = list(cached_rows[index - 1])
+            values = [
+                _prefer_page_value(value, cached_values[offset] if offset < len(cached_values) else None)
+                for offset, value in enumerate(values)
+            ]
+        values_rows.append(values)
+    return values_rows
+
+
+def extract_page_table(
+    values_rows: list[list],
+    columns: tuple[int, ...],
+    stop_column: int,
+) -> tuple[list[str], list[list[str]]]:
+    """Header and data cells above the first '?' or blank in stop_column.
+
+    Rows at and below that cell are left off the page, including later rows
+    that have values again.
+    """
+    header = [""] * len(columns)
+    rows: list[list[str]] = []
+    for index, values in enumerate(values_rows, start=1):
+        if index == 1:
+            header = [_page_header(cell_at(values, column)) for column in columns]
+            continue
+        if _page_cell_stops(cell_at(values, stop_column)):
+            break
+        rows.append([_page_text(cell_at(values, column)) for column in columns])
+    return header, rows
+
+
+def collect_page_groups(files: list[Path]) -> list[dict]:
+    """Read every dated workbook and stack each page table in that file order."""
+    grouped = [
+        {
+            "stem": spec["stem"],
+            "title": spec["title"],
+            "tables": [
+                {
+                    "sheet": part[0],
+                    "columns": part[1],
+                    "letters": [get_column_letter(column) for column in part[1]],
+                    "header": [],
+                    "rows": [],
+                }
+                for part in spec["parts"]
+            ],
+        }
+        for spec in PAGE_SPECS
+    ]
+    needed: dict[str, list[tuple[int, int]]] = {}
+    for group_index, group in enumerate(grouped):
+        for table_index, table in enumerate(group["tables"]):
+            needed.setdefault(table["sheet"], []).append((group_index, table_index))
+
+    for path in files:
+        workbook = load_workbook(path, data_only=False, read_only=True)
+        cached_book = load_workbook(path, data_only=True, read_only=True)
+        try:
+            for sheet_name, targets in needed.items():
+                if sheet_name not in workbook.sheetnames:
+                    continue
+                cached = cached_book[sheet_name] if sheet_name in cached_book.sheetnames else None
+                stop_column = PAGE_STOP_COLUMN[sheet_name]
+                max_col = stop_column
+                for group_index, table_index in targets:
+                    max_col = max(max_col, max(grouped[group_index]["tables"][table_index]["columns"]))
+                values_rows = _read_sheet_values(workbook[sheet_name], cached, max_col)
+                for group_index, table_index in targets:
+                    table = grouped[group_index]["tables"][table_index]
+                    header, rows = extract_page_table(values_rows, table["columns"], stop_column)
+                    if any(header) and not any(table["header"]):
+                        table["header"] = header
+                    table["rows"].extend(rows)
+        finally:
+            workbook.close()
+            cached_book.close()
+
+    result = []
+    for group in grouped:
+        tables = [table for table in group["tables"] if table["rows"]]
+        if tables:
+            result.append({"stem": group["stem"], "title": group["title"], "tables": tables})
+    return result
+
+
+def pack_page_chunks(blocks: list[dict], body_height: int, gap: int = PAGE_GAP) -> list[list[dict]]:
+    """Split tables into page chunks. Each chunk repeats that table's header."""
+    pages: list[list[dict]] = []
+    current: list[dict] = []
+    used = 0
+
+    def close() -> None:
+        nonlocal current, used
+        if current:
+            pages.append(current)
+        current = []
+        used = 0
+
+    for block_index, block in enumerate(blocks):
+        heights = block["row_heights"]
+        if not heights:
+            continue
+        head = block["letter_h"] + block["header_h"]
+        start = 0
+        count = len(heights)
+        while start < count:
+            prefix = gap if current else 0
+            if current and used + prefix + head + heights[start] > body_height:
+                close()
+                prefix = 0
+            room = body_height - used - prefix - head
+            consumed = 0
+            end = start
+            while end < count and consumed + heights[end] <= room:
+                consumed += heights[end]
+                end += 1
+            if end == start:
+                end = start + 1
+                consumed = heights[start]
+            current.append({"block_index": block_index, "row_start": start, "row_end": end})
+            used += prefix + head + consumed
+            start = end
+    close()
+    return pages
+
+
+def _wrap_line(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, width: int) -> list[str]:
+    if text == "":
+        return [""]
+    lines: list[str] = []
+    current = ""
+    for char in text:
+        trial = current + char
+        if current and draw.textlength(trial, font=font) > width:
+            lines.append(current)
+            current = char
+        else:
+            current = trial
+    if current:
+        lines.append(current)
+    return lines or [""]
+
+
+def _wrap_cell(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, width: int) -> list[str]:
+    lines: list[str] = []
+    for paragraph in text.split("\n"):
+        lines.extend(_wrap_line(draw, paragraph, font, width))
+    return lines or [""]
+
+
+def _text_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont) -> float:
+    widest = 0.0
+    for line in text.split("\n"):
+        widest = max(widest, draw.textlength(line, font=font))
+    return widest
+
+
+def _column_widths(
+    draw: ImageDraw.ImageDraw,
+    letters: list[str],
+    header: list[str],
+    rows: list[list[str]],
+    font: ImageFont.FreeTypeFont,
+    letter_font: ImageFont.FreeTypeFont,
+) -> list[int]:
+    usable = PAGE_RIGHT - PAGE_LEFT - PAGE_INDEX_W
+    prefs = []
+    for index, letter in enumerate(letters):
+        widest = draw.textlength(letter, font=letter_font)
+        widest = max(widest, _text_width(draw, header[index] if index < len(header) else "", font))
+        for row in rows:
+            if index < len(row):
+                widest = max(widest, _text_width(draw, row[index], font))
+        prefs.append(max(int(math.ceil(widest)) + 16, 80))
+    total = sum(prefs)
+    if total <= 0:
+        return [usable // max(len(letters), 1)] * len(letters)
+    if total <= usable:
+        extra = usable - total
+        widths = []
+        used = 0
+        for index, pref in enumerate(prefs):
+            if index == len(prefs) - 1:
+                widths.append(usable - used)
+            else:
+                width = int(round(pref + extra * (pref / total)))
+                widths.append(width)
+                used += width
+        return widths
+    scale = usable / total
+    widths = [max(64, int(pref * scale)) for pref in prefs]
+    overflow = sum(widths) - usable
+    while overflow > 0:
+        index = max(range(len(widths)), key=lambda item: widths[item])
+        if widths[index] <= 64:
+            break
+        widths[index] -= 1
+        overflow -= 1
+    short = usable - sum(widths)
+    if short > 0 and widths:
+        widths[-1] += short
+    return widths
+
+
+def _block_metrics(draw: ImageDraw.ImageDraw, table: dict, font: ImageFont.FreeTypeFont, letter_font: ImageFont.FreeTypeFont) -> dict:
+    letters = table["letters"]
+    header = list(table["header"]) + [""] * (len(letters) - len(table["header"]))
+    rows = table["rows"]
+    widths = _column_widths(draw, letters, header, rows, font, letter_font)
+    inner = [max(width - 16, 8) for width in widths]
+    header_lines = [_wrap_cell(draw, header[index], font, inner[index]) for index in range(len(letters))]
+    wrapped_rows = []
+    row_heights = []
+    for row in rows:
+        cells = []
+        for index in range(len(letters)):
+            text = row[index] if index < len(row) else ""
+            cells.append(_wrap_cell(draw, text, font, inner[index]))
+        wrapped_rows.append(cells)
+        row_heights.append(max(PAGE_MIN_ROW_H, max(len(lines) for lines in cells) * PAGE_LINE + 12))
+    header_h = max(PAGE_MIN_HEADER_H, max(len(lines) for lines in header_lines) * PAGE_LINE + 12)
+    return {
+        "letters": letters,
+        "widths": widths,
+        "header_lines": header_lines,
+        "wrapped_rows": wrapped_rows,
+        "letter_h": PAGE_LETTER_H,
+        "header_h": header_h,
+        "row_heights": row_heights,
+    }
+
+
+def _draw_text_block(
+    draw: ImageDraw.ImageDraw,
+    box: tuple[int, int, int, int],
+    lines: list[str],
+    font: ImageFont.FreeTypeFont,
+    align: str,
+) -> None:
+    x0, y0, x1, y1 = box
+    block_h = PAGE_LINE * len(lines)
+    y = y0 + max(0, (y1 - y0 - block_h) / 2)
+    for line in lines:
+        if align == "center":
+            width = draw.textlength(line, font=font)
+            x = x0 + (x1 - x0 - width) / 2
+        else:
+            x = x0 + 8
+        draw.text((x, y), line, font=font, fill=PAGE_INK)
+        y += PAGE_LINE
+
+
+def _draw_table_chunk(
+    draw: ImageDraw.ImageDraw,
+    top: int,
+    block: dict,
+    row_start: int,
+    row_end: int,
+    font: ImageFont.FreeTypeFont,
+    letter_font: ImageFont.FreeTypeFont,
+) -> int:
+    widths = block["widths"]
+    letter_h = block["letter_h"]
+    header_h = block["header_h"]
+    xs = [PAGE_LEFT, PAGE_LEFT + PAGE_INDEX_W]
+    for width in widths:
+        xs.append(xs[-1] + width)
+    y_letter = top
+    y_header = y_letter + letter_h
+    y_data = y_header + header_h
+    row_tops = [y_data]
+    for height in block["row_heights"][row_start:row_end]:
+        row_tops.append(row_tops[-1] + height)
+    bottom = row_tops[-1]
+
+    for index in range(len(xs) - 1):
+        draw.rectangle([xs[index], y_letter, xs[index + 1], y_header], fill=PAGE_HEADER_BG)
+        header_fill = PAGE_INDEX_HEADER_BG if index == 0 else PAGE_HEADER_BG
+        draw.rectangle([xs[index], y_header, xs[index + 1], y_data], fill=header_fill)
+    for row_index, y0 in enumerate(row_tops[:-1]):
+        y1 = row_tops[row_index + 1]
+        draw.rectangle([xs[0], y0, xs[1], y1], fill=PAGE_INDEX_BG)
+        for column in range(1, len(xs) - 1):
+            draw.rectangle([xs[column], y0, xs[column + 1], y1], fill=PAGE_BG)
+
+    for x in xs:
+        draw.line([(x, y_letter), (x, bottom)], fill=PAGE_GRID)
+    for y in (y_letter, y_header, y_data, *row_tops[1:]):
+        draw.line([(xs[0], y), (xs[-1], y)], fill=PAGE_GRID)
+
+    for index, letter in enumerate(block["letters"]):
+        _draw_text_block(draw, (xs[index + 1], y_letter, xs[index + 2], y_header), [letter], letter_font, "center")
+    _draw_text_block(draw, (xs[0], y_header, xs[1], y_data), ["1"], font, "center")
+    for index, lines in enumerate(block["header_lines"]):
+        _draw_text_block(draw, (xs[index + 1], y_header, xs[index + 2], y_data), lines, font, "left")
+    for offset, lines_row in enumerate(block["wrapped_rows"][row_start:row_end]):
+        y0 = row_tops[offset]
+        y1 = row_tops[offset + 1]
+        _draw_text_block(draw, (xs[0], y0, xs[1], y1), [str(row_start + offset + 2)], font, "center")
+        for index, lines in enumerate(lines_row):
+            _draw_text_block(draw, (xs[index + 1], y0, xs[index + 2], y1), lines, font, "left")
+    return bottom
+
+
+def render_group_pages(group: dict) -> list[Image.Image]:
+    """Draw one output name. Tables share a page until the next row does not fit."""
+    font = _page_font(16)
+    letter_font = _page_font(15)
+    title_font = _page_font(22)
+    probe = Image.new("RGB", (PAGE_W, PAGE_H), PAGE_BG)
+    draw = ImageDraw.Draw(probe)
+    blocks = [_block_metrics(draw, table, font, letter_font) for table in group["tables"]]
+    body_height = PAGE_BOTTOM - PAGE_TOP
+    chunks = pack_page_chunks(blocks, body_height, PAGE_GAP)
+    pages = []
+    total = max(len(chunks), 1)
+    for page_index, page in enumerate(chunks, start=1):
+        image = Image.new("RGB", (PAGE_W, PAGE_H), PAGE_BG)
+        page_draw = ImageDraw.Draw(image)
+        page_draw.text((30, 28), f"{group['title']}  {page_index}/{total}", font=title_font, fill=PAGE_INK)
+        cursor = PAGE_TOP
+        for chunk_index, chunk in enumerate(page):
+            if chunk_index:
+                cursor += PAGE_GAP
+            cursor = _draw_table_chunk(
+                page_draw,
+                cursor,
+                blocks[chunk["block_index"]],
+                chunk["row_start"],
+                chunk["row_end"],
+                font,
+                letter_font,
+            )
+        pages.append(image)
+    return pages
+
+
+def _clear_page_pngs(destination: Path) -> None:
+    stems = {spec["stem"] for spec in PAGE_SPECS}
+    for path in destination.glob("*.png"):
+        match = re.match(r"^(.+)_(\d+)$", path.stem)
+        if match and match.group(1) in stems:
+            path.unlink()
+
+
+def _write_pdf(path: Path, images: list[Image.Image]) -> None:
+    if not images:
+        return
+    resolution = 1600 / (297 / 25.4)
+    images[0].save(
+        path,
+        "PDF",
+        resolution=resolution,
+        save_all=True,
+        append_images=images[1:],
+    )
+
+
+def export_page_files(files: list[Path], destination: Path, pdf_stem: str) -> tuple[list[str], Path | None]:
+    """Write landscape PNG pages and one PDF named like the output workbook."""
+    destination = Path(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+    groups = collect_page_groups(list(files))
+    _clear_page_pngs(destination)
+    notes = []
+    images: list[Image.Image] = []
+    if not groups:
+        notes.append("No landscape pages. The selected columns had no rows above '?'.")
+        return notes, None
+    for group in groups:
+        pages = render_group_pages(group)
+        images.extend(pages)
+        for index, image in enumerate(pages, start=1):
+            path = destination / f"{group['stem']}_{index}.png"
+            image.save(path, "PNG")
+            notes.append(f"Saved {path}")
+    pdf_path = destination / f"{pdf_stem}.pdf"
+    _write_pdf(pdf_path, images)
+    notes.append(f"Saved {pdf_path}")
+    return notes, pdf_path
+
+
+# Same receivers as readExcel.py "Gmail 傳送 Excel" in app7.
+GMAIL_TO = "ghpiu0661@gmail.com,ghjane5168@gmail.com,a290772@gmail.com"
+GMAIL_SUBJECT = "Extract"
+
+
+def _ps_quote(text: str) -> str:
+    return "'" + text.replace("'", "''") + "'"
+
+
+def gmail_output_files(folder: Path) -> list[Path]:
+    """Extract.xlsx, Extract.pdf, and Extract.html in the output folder."""
+    import shutil
+
+    output = Path(folder) / "output"
+    excel = output / "Extract.xlsx"
+    pdf = output / "Extract.pdf"
+    html_path = output / "Extract.html"
+    plots = output / "Extract_plots.html"
+    if not html_path.is_file() and plots.is_file():
+        shutil.copyfile(plots, html_path)
+    chosen = [excel, pdf, html_path]
+    missing = [path.name for path in chosen if not path.is_file()]
+    if missing:
+        raise FileNotFoundError(
+            "Run Process first. These files are missing from output:\n" + "\n".join(missing)
+        )
+    return [path.resolve() for path in chosen]
+
+
+def gmail_compose_url(to: str, subject: str, body: str) -> str:
+    query = urllib.parse.urlencode(
+        {"view": "cm", "fs": "1", "tf": "cm", "to": to, "su": subject, "body": body}
+    )
+    return "https://mail.google.com/mail/u/0/?" + query
+
+
+def send_gmail_files(files: list[Path], to: str = GMAIL_TO, runner=None) -> str:
+    """Open Gmail compose and put the files on the clipboard, then paste once."""
+    paths = [Path(item).resolve() for item in files]
+    missing = [str(item) for item in paths if not item.is_file()]
+    if missing:
+        raise FileNotFoundError("Missing files:\n" + "\n".join(missing))
+    names = "\n".join(item.name for item in paths)
+    body = "Extract.xlsx, Extract.pdf, and Extract.html attached."
+    url = gmail_compose_url(to, GMAIL_SUBJECT, body)
+    adds = "\n".join(
+        "[void]$files.Add((Resolve-Path -LiteralPath " + _ps_quote(str(item)) + ").Path)" for item in paths
+    )
+    script = """
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class GmailWin {
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+  [DllImport("user32.dll")] public static extern bool SetCursorPos(int X, int Y);
+  [DllImport("user32.dll")] public static extern void mouse_event(int dwFlags, int dx, int dy, int dwData, int dwExtraInfo);
+  public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+}
+"@
+$files = New-Object System.Collections.Specialized.StringCollection
+__ADDS__
+[System.Windows.Forms.Clipboard]::SetFileDropList($files)
+$before = @(Get-Process | Where-Object { $_.MainWindowHandle -ne 0 } | ForEach-Object { [int64]$_.MainWindowHandle })
+Start-Process __URL__
+$target = $null
+for ($i = 0; $i -lt 40; $i++) {
+  Start-Sleep -Milliseconds 500
+  $windows = @(Get-Process | Where-Object {
+    $_.MainWindowHandle -ne 0 -and $_.MainWindowTitle -match 'Gmail|Compose|Mail'
+  })
+  $fresh = @($windows | Where-Object { $before -notcontains [int64]$_.MainWindowHandle })
+  if ($fresh.Count -gt 0) { $target = $fresh[0]; break }
+  $compose = @($windows | Where-Object { $_.MainWindowTitle -match 'Compose|Mail' })
+  if ($compose.Count -gt 0) { $target = $compose[0]; break }
+}
+if ($null -eq $target) { throw 'Gmail compose window was not found. Files were not attached.' }
+$hwnd = $target.MainWindowHandle
+[GmailWin]::ShowWindow($hwnd, 9) | Out-Null
+Start-Sleep -Milliseconds 400
+[GmailWin]::SetForegroundWindow($hwnd) | Out-Null
+Start-Sleep -Milliseconds 800
+$rect = New-Object GmailWin+RECT
+[GmailWin]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+$width = $rect.Right - $rect.Left
+$height = $rect.Bottom - $rect.Top
+if ($width -lt 200 -or $height -lt 200) { throw 'Gmail window is too small to attach files.' }
+$x = [int]($rect.Left + ($width * 0.45))
+$y = [int]($rect.Top + ($height * 0.58))
+[GmailWin]::SetForegroundWindow($hwnd) | Out-Null
+[GmailWin]::SetCursorPos($x, $y) | Out-Null
+Start-Sleep -Milliseconds 200
+[GmailWin]::mouse_event(0x0002, 0, 0, 0, 0)
+[GmailWin]::mouse_event(0x0004, 0, 0, 0, 0)
+Start-Sleep -Milliseconds 300
+[GmailWin]::SetCursorPos($x, $y) | Out-Null
+[GmailWin]::mouse_event(0x0002, 0, 0, 0, 0)
+[GmailWin]::mouse_event(0x0004, 0, 0, 0, 0)
+Start-Sleep -Milliseconds 400
+[GmailWin]::SetForegroundWindow($hwnd) | Out-Null
+[System.Windows.Forms.SendKeys]::SendWait('^v')
+Start-Sleep -Milliseconds 800
+Write-Output 'GMAIL_OK'
+""".replace("__ADDS__", adds).replace("__URL__", _ps_quote(url))
+    if runner is None:
+        if os.name != "nt":
+            raise OSError("Windows required for Gmail attach.")
+        import ctypes
+
+        ctypes.windll.user32.AllowSetForegroundWindow(-1)
+        runner = subprocess.run
+    script_path = Path(os.path.join(os.environ.get("TEMP", "."), "processExcel_gmail.ps1"))
+    script_path.write_text(script, encoding="utf-8-sig")
+    proc = runner(
+        ["powershell", "-NoProfile", "-NoLogo", "-STA", "-ExecutionPolicy", "Bypass", "-File", str(script_path)],
+        capture_output=True,
+        text=True,
+        timeout=70,
+        check=False,
+    )
+    out = (proc.stdout or "") + (proc.stderr or "")
+    if "GMAIL_OK" not in out:
+        detail = out.strip() or "Gmail open failed."
+        raise RuntimeError(detail)
+    return names
 
 
 class App(tk.Tk):
@@ -1296,8 +1939,12 @@ class App(tk.Tk):
         )
         ttk.Label(frame, text=hint, wraplength=700, justify="left").pack(fill="x", padx=12, pady=4)
 
-        self.run_button = ttk.Button(frame, text="Process", command=self.on_run)
-        self.run_button.pack(anchor="w", padx=12, pady=6)
+        button_row = ttk.Frame(frame)
+        button_row.pack(anchor="w", padx=12, pady=6)
+        self.run_button = ttk.Button(button_row, text="Process", command=self.on_run)
+        self.run_button.pack(side="left")
+        self.gmail_button = ttk.Button(button_row, text="Gmail 傳送 Excel", command=self.on_gmail)
+        self.gmail_button.pack(side="left", padx=(8, 0))
         self.log = ScrolledText(frame, height=18, font=(FONT_NAME, 10))
         self.log.pack(fill="both", expand=True, padx=12, pady=(0, 12))
 
@@ -1364,7 +2011,52 @@ class App(tk.Tk):
         assert result is not None
         for line in result.messages:
             self.append_log(line)
-        messagebox.showinfo("processExcel", f"Saved\n{result.excel_path}\n{result.plot_path}")
+        saved = [str(result.excel_path), str(result.plot_path)]
+        if result.pdf_path is not None:
+            saved.append(str(result.pdf_path))
+        messagebox.showinfo("processExcel", "Saved\n" + "\n".join(saved))
+
+    def on_gmail(self) -> None:
+        folder = self.folder.get().strip()
+        if not folder:
+            messagebox.showerror("Gmail 傳送 Excel", "Choose a folder first.")
+            return
+        try:
+            files = gmail_output_files(Path(folder))
+        except FileNotFoundError as exc:
+            messagebox.showerror("Gmail 傳送 Excel", str(exc))
+            return
+        self.gmail_button.state(["disabled"])
+        self.append_log("Opening Gmail...")
+        thread = threading.Thread(target=self._gmail_work, args=(files,), daemon=True)
+        thread.start()
+
+    def _gmail_work(self, files: list[Path]) -> None:
+        try:
+            names = send_gmail_files(files)
+        except Exception as exc:
+            self.after(0, self._gmail_finish, None, str(exc))
+            return
+        self.after(0, self._gmail_finish, names, None)
+
+    def _gmail_finish(self, names: str | None, error: str | None) -> None:
+        self.gmail_button.state(["!disabled"])
+        if error:
+            self.append_log(error)
+            messagebox.showerror("Gmail 傳送 Excel", error)
+            return
+        assert names is not None
+        self.append_log("Gmail opened.\n" + names)
+        self.append_log("To: " + GMAIL_TO)
+        messagebox.showinfo(
+            "Gmail 傳送 Excel",
+            "Gmail compose is open.\n\n"
+            "These files were pasted into the message:\n"
+            + names
+            + "\n\nCheck that all three are attached, then click Send.\n"
+            "If they are missing, click the message body and press Ctrl+V.\n\nReceivers:\n"
+            + GMAIL_TO,
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
