@@ -9,14 +9,15 @@ This README describes the **current** app8 tree on `main`. Older releases stay o
 | **`v1`** | First processExcel release (commit `ff2a2d3`). Sheets 運動, 血壓, and 睡眠 only. |
 | **`v2`** | 喝水量 from 清潔, plus 排洩 and 身體情況 tables with no plots (commit `6b57b7c`). |
 | **`v3`** | Landscape PNG pages, `Extract.pdf`, and **Gmail 傳送 Excel** (commit `be9b652`). |
-| **`v4`** | This tree. Diet, sleep, exercise, and water pages described below, plus the 食物 sheet and chart. `main` points here. |
+| **`v4`** | Diet, sleep, exercise, and water pages, plus the 食物 sheet and chart (commit `d1f29a4`). |
+| **`v5`** | This tree. `Extract.pdf` no longer includes the 清潔 page, and `清潔_*.png` is not written. `main` points here. |
 
 ```bat
 git fetch origin tag v1
 git checkout v1
 ```
 
-The same commands work for `v2` and `v3`. Return to the new version with `git checkout main`.
+The same commands work for `v2`, `v3`, and `v4`. Return to the new version with `git checkout main`.
 
 | | |
 |---|---|
@@ -68,14 +69,13 @@ The same 運動, 血壓, 睡眠, 喝水量, and 食物 charts are written to `Ex
 
 ## Landscape pages and PDF
 
-Process also writes one landscape page series per table. A page is 1600×1132 pixels. When the rows do not fit, the next file is `運動_2.png`, `運動_3.png`, and so on. Every PNG is then combined into `output\Extract.pdf`.
+Process also writes one landscape page series per table. A page is 1600×1132 pixels. When the rows do not fit, the next file is `運動_2.png`, `運動_3.png`, and so on. Every PNG is then combined into `output\Extract.pdf`. The 清潔 sheet stays in `Extract.xlsx`. Its page is left out of `Extract.pdf`, and `清潔_*.png` is not kept.
 
 A page keeps rows above the first `?` or `？` in column A, and above the first `?`, `？`, or blank cell in the stop column. Rows at and below that marker are left out, including template rows whose formula result is `00:00:00`.
 
 | Page file | Sheet | What is drawn |
 |---|---|---|
 | `運動_1.png` | 運動 | 運動日期, 開始時間, 運動距離, and 一天運動距離 on the first row of each date |
-| `清潔_1.png` | 清潔 | Columns B, D, F, above the first blank cup |
 | `飲食_1.png` | 飲食 | One row per date: 早餐食物, 午餐食物, 晚餐食物, and 一天食物 |
 | `喝水量_1.png` | 喝水量 in `Extract.xlsx` | Placed in the PDF immediately after 飲食 |
 | `睡眠_1.png` | 睡眠 | 日期, 開始時間, 結束時間, 睡眠時間, and 一天睡眠時間 on the first row of each date |

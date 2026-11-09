@@ -1357,7 +1357,7 @@ create a batch file at C:\Users\User\Desktop\ with name EXCEL to run app7
 
 ############ 
 Create A ReadeMe.md
-Commit all files and folder "C:\Users\User\Desktop\app7" to git and to push main to GitHub.
+Commit all files and folder "C:\Users\User\Desktop\app8" to git and to push main to GitHub.
 do not ask questions, just do it
 
 https://cursor.com/codebase/steve-gau/app-boot/tree/main
@@ -2378,10 +2378,7 @@ the methods to determine the rows to output is based on
 0.2 the cell in row above empty ""
 
 20261105.xlsx and  20261107.xlsx do not have this problem. compare 20261106.xlsx to 20261105.xlsx and  20261107.xlsx and check the problem
-
 do not change any other existed codes
-
-
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 add codes in processExcel.py 
@@ -2389,18 +2386,13 @@ insert a plot in  Extract_plots.html, plot the data in sheet "食物" in  Extrac
 plot data "早餐食物: Makanan sarapan", "午餐食物: Makanan makan siang", "晚餐食物: Makanan makan malam","一天食物 Makanan untuk satu hari" v.s. "日期 Tanggal"
 do not change any other existed codes
 
-
-
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 all input excel files are located at C:\Users\User\Downloads\Data Nenek November
 there are files: 20261105.xlsx, 20261106.xlsx, 20261107.xlsx
-
 wrong data in output file Extract.xlsx, sheet "喝水量"
 see sheet "喝水量(杯) Asupan air (cangkir)" in the input files in  20261105.xlsx, 20261106.xlsx, 20261107.xlsx
 do not change any other existed codes
-
 see image input.png and output.png
-
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 all input excel files are located at C:\Users\User\Downloads\Data Nenek November
@@ -2409,7 +2401,14 @@ insert  output excel file Extract.xlsx, sheet "喝水量" to  output pdf file Ex
 see image from output excel file Extract.xlsx, sheet "喝水量"  and image from  output pdf file Extract.pdf
 do not change any other existed codes
 
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+modify codes in processExcel.py 
+in Extract.pdf remove "清潔" data and related png files
+see attached image
+do not change any other existed codes
 
+
+ 
 
 
 

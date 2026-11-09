@@ -2299,6 +2299,7 @@ def export_page_files(files: list[Path], destination: Path, pdf_stem: str) -> tu
     destination.mkdir(parents=True, exist_ok=True)
     groups = collect_page_groups(list(files))
     groups = _insert_water_page(groups, destination / f"{pdf_stem}.xlsx")
+    groups = [group for group in groups if group["stem"] != "清潔"]
     _clear_page_pngs(destination)
     for path in destination.glob("喝水量_*.png"):
         path.unlink()

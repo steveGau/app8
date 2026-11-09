@@ -1087,7 +1087,8 @@ class PageImageTests(unittest.TestCase):
             self.assertEqual(image.size, (1600, 1132))
             self.assertGreater(image.size[0], image.size[1])
             image.close()
-            for stem in ("清潔_1.png", "飲食_1.png", "睡眠_1.png", "排洩1_1.png", "排洩2_1.png", "血壓1_1.png", "血壓2_1.png", "身體情況1_1.png", "身體情況2_1.png"):
+            self.assertFalse((root / "output" / "清潔_1.png").is_file())
+            for stem in ("飲食_1.png", "睡眠_1.png", "排洩1_1.png", "排洩2_1.png", "血壓1_1.png", "血壓2_1.png", "身體情況1_1.png", "身體情況2_1.png"):
                 self.assertTrue((root / "output" / stem).is_file(), stem)
             self.assertIn(str(result.pdf_path), "\n".join(result.messages))
 
