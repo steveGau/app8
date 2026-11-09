@@ -373,6 +373,8 @@ class WaterTests(unittest.TestCase):
     def test_cup_fractions(self):
         self.assertAlmostEqual(app.parse_cups("1/6"), 1 / 6)
         self.assertAlmostEqual(app.parse_cups("1/2"), 0.5)
+        self.assertAlmostEqual(app.parse_cups("5 1/2"), 5.5)
+        self.assertAlmostEqual(app.parse_cups("1 1/2"), 1.5)
         self.assertEqual(app.parse_cups("1"), 1)
         self.assertEqual(app.parse_cups(2), 2)
         self.assertIsNone(app.parse_cups("?"))
@@ -423,32 +425,169 @@ class WaterTests(unittest.TestCase):
 
             result = app.process_folder(root, output_dir=root / "output")
             book = load_workbook(result.excel_path)
-            self.assertEqual(book.sheetnames, ["喝水量", "喝水量 Plot"])
+            self.assertEqual(
+                book.sheetnames,
+                ["喝水量", "喝水量 Plot", "清潔", "喝水時間", "喝水量(杯)"],
+            )
             water = book["喝水量"]
             self.assertEqual([water.cell(1, col).value for col in range(1, 5)], ["喝水", "喝水日期", "喝水時間", "喝水量(杯)"])
             self.assertEqual([water.cell(row, 1).value for row in range(2, 6)], ["喝水", "喝水", "喝水", "喝水"])
             self.assertIsNone(water["A6"].value)
+            self.assertIsNone(water["E1"].value)
             self.assertEqual(water["C2"].value, "05:32")
             self.assertEqual(water["C3"].value, "09:24")
+            self.assertEqual(water["C4"].value, "12:00")
+            self.assertEqual(water["C5"].value, "07:00")
+            self.assertEqual(self._as_date(water["B5"].value), date(2026, 10, 5))
             self.assertAlmostEqual(water["D2"].value, 1 / 6)
             self.assertEqual(water["D3"].value, 1)
             self.assertAlmostEqual(water["D4"].value, 0.5)
-            self.assertIsNone(water["D5"].value)
-            self.assertEqual(water["E2"].value, "喝水")
-            self.assertEqual(water["G2"].value, "07:00")
-            self.assertEqual(water["H2"].value, 2)
+            self.assertEqual(water["D5"].value, 2)
             self.assertNotIn(9, [cell.value for row in water.iter_rows() for cell in row])
 
+            copied_dates = book["清潔"]
+            copied_times = book["喝水時間"]
+            copied_cups = book["喝水量(杯)"]
+            self.assertEqual(copied_dates["A1"].value, "清潔日期 Tanggal pembersihan")
+            self.assertIsNone(copied_dates["B1"].value)
+            self.assertEqual(
+                [self._as_date(copied_dates.cell(row, 1).value) for row in range(2, 6)],
+                [date(2026, 10, 4), date(2026, 10, 4), date(2026, 10, 4), date(2026, 10, 5)],
+            )
+            self.assertIsNone(copied_dates["A6"].value)
+            self.assertEqual([copied_times.cell(row, 1).value for row in range(2, 6)], ["05:32", "09:24", "12:00", "07:00"])
+            self.assertAlmostEqual(copied_cups["A2"].value, 1 / 6)
+            self.assertEqual(copied_cups["A3"].value, 1)
+            self.assertAlmostEqual(copied_cups["A4"].value, 0.5)
+            self.assertEqual(copied_cups["A5"].value, 2)
+            self.assertNotIn(9, [cell.value for row in copied_cups.iter_rows() for cell in row])
+            self.assertEqual(len(copied_dates._charts), 0)
+
             titles = [chart.title.tx.rich.p[0].r[0].t for chart in book["喝水量 Plot"]._charts]
-            self.assertEqual(titles, ["全部喝水量-日期", "全部喝水量次數-日期"])
+            self.assertEqual(titles, ["喝水量-喝水日期", "全部喝水量-日期", "全部喝水量次數-日期"])
             plot_values = [value for row in book["喝水量 Plot"].iter_rows(values_only=True) for value in row if value is not None]
+            self.assertEqual(
+                [value for value in plot_values if isinstance(value, str) and value.startswith("2026-10-")],
+                ["2026-10-04 05:32", "2026-10-04 09:24", "2026-10-04 12:00", "2026-10-05 07:00", "2026-10-04", "2026-10-05", "2026-10-04", "2026-10-05"],
+            )
             self.assertIn(3, plot_values)
+            self.assertIn(2, plot_values)
             self.assertTrue(any(isinstance(value, float) and abs(value - (1 / 6 + 1 + 0.5)) < 1e-9 for value in plot_values))
             book.close()
 
             html = result.plot_path.read_text(encoding="utf-8")
+            self.assertIn("喝水量-喝水日期", html)
             self.assertIn("全部喝水量-日期", html)
             self.assertIn("全部喝水量次數-日期", html)
+
+    def _as_date(self, value):
+        if isinstance(value, datetime):
+            return value.date()
+        return value
+
+    def test_columns_stop_above_blank_cup_and_named_sheets(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            first = Workbook()
+            sheet = first.active
+            sheet.title = "清潔"
+            sheet["B1"] = "清潔日期\nTanggal pembersihan"
+            sheet["D1"] = "清潔時間\nWaktu bersih-bersih"
+            sheet["F1"] = "喝水量(杯)\nAsupan air (cangkir)"
+            sheet["B2"] = date(2026, 11, 4)
+            sheet["D2"] = "23:37"
+            sheet["F2"] = "2.5"
+            sheet["B3"] = date(2026, 9, 11)
+            sheet["D3"] = "00:00"
+            sheet["F4"] = "9"
+            sheet["D4"] = "03:00"
+            first.save(root / "20261016.xlsx")
+            first.close()
+
+            second = Workbook()
+            clean = second.active
+            clean.title = "清潔"
+            clean["B1"] = "清潔日期\nTanggal pembersihan"
+            clean["D1"] = "清潔時間\nWaktu bersih-bersih"
+            clean["F1"] = "喝水量(杯)\nAsupan air (cangkir)"
+            clean["B2"] = date(2026, 11, 6)
+            clean["D2"] = time(8, 5)
+            clean["F2"] = "1/4"
+            clean["F3"] = "?"
+            clean["B3"] = date(2026, 11, 7)
+            second.save(root / "20261017.xlsx")
+            second.close()
+
+            result = app.process_folder(root, output_dir=root / "output")
+            book = load_workbook(result.excel_path)
+            dates = book["清潔"]
+            times = book["喝水時間"]
+            cups = book["喝水量(杯)"]
+            self.assertEqual(self._as_date(dates["A2"].value), date(2026, 11, 4))
+            self.assertEqual(self._as_date(dates["A3"].value), date(2026, 11, 6))
+            self.assertIsNone(dates["A4"].value)
+            self.assertIsNone(dates["B1"].value)
+            self.assertEqual(times["A2"].value, "23:37")
+            self.assertEqual(times["A3"].value, "08:05")
+            self.assertEqual(cups["A2"].value, 2.5)
+            self.assertAlmostEqual(cups["A3"].value, 0.25)
+            water = book["喝水量"]
+            self.assertEqual(water["A2"].value, "喝水")
+            self.assertEqual(self._as_date(water["B2"].value), date(2026, 11, 4))
+            self.assertEqual(water["C2"].value, "23:37")
+            self.assertEqual(water["D2"].value, 2.5)
+            self.assertEqual(water["A3"].value, "喝水")
+            self.assertEqual(self._as_date(water["B3"].value), date(2026, 11, 6))
+            self.assertEqual(water["C3"].value, "08:05")
+            self.assertAlmostEqual(water["D3"].value, 0.25)
+            self.assertIsNone(water["A4"].value)
+            self.assertIsNone(water["E1"].value)
+            plot_values = [value for row in book["喝水量 Plot"].iter_rows(values_only=True) for value in row if value is not None]
+            self.assertEqual(
+                [value for value in plot_values if isinstance(value, str)],
+                ["喝水日期", "喝水量(杯)", "2026-11-04 23:37", "2026-11-06 08:05", "日期", "全部喝水量", "2026-11-04", "2026-11-06", "日期", "全部喝水量次數", "2026-11-04", "2026-11-06"],
+            )
+            self.assertNotIn(9, [cell.value for row in cups.iter_rows() for cell in row])
+            self.assertNotIn("00:00", [cell.value for row in times.iter_rows() for cell in row])
+            self.assertNotIn(date(2026, 9, 11), [self._as_date(cell.value) for row in dates.iter_rows() for cell in row])
+            self.assertNotIn(date(2026, 10, 16), [self._as_date(cell.value) for row in water.iter_rows() for cell in row])
+            book.close()
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            book = Workbook()
+            dates = book.active
+            dates.title = "清潔日期 Tanggal pembersihan"
+            dates["A1"] = "清潔日期 Tanggal pembersihan"
+            dates["A2"] = date(2026, 10, 16)
+            dates["A3"] = date(2026, 10, 17)
+            dates["A4"] = "?"
+            dates["A5"] = date(2026, 1, 1)
+            times = book.create_sheet("清潔時間 Waktu bersih-bersih")
+            times["A1"] = "清潔時間 Waktu bersih-bersih"
+            times["A2"] = "06:45"
+            times["A3"] = ""
+            times["A4"] = "18:00"
+            cups = book.create_sheet("喝水量(杯) Asupan air (cangkir)")
+            cups["A1"] = "喝水量(杯) Asupan air (cangkir)"
+            cups["A2"] = "1/3"
+            cups["A3"] = 2
+            cups["A4"] = "?"
+            book.save(root / "20261016.xlsx")
+            book.close()
+
+            result = app.process_folder(root, output_dir=root / "output")
+            saved = load_workbook(result.excel_path)
+            self.assertEqual(saved.sheetnames, ["清潔", "喝水時間", "喝水量(杯)"])
+            self.assertEqual(self._as_date(saved["清潔"]["A2"].value), date(2026, 10, 16))
+            self.assertEqual(self._as_date(saved["清潔"]["A3"].value), date(2026, 10, 17))
+            self.assertIsNone(saved["清潔"]["A4"].value)
+            self.assertEqual(saved["喝水時間"]["A2"].value, "06:45")
+            self.assertIsNone(saved["喝水時間"]["A3"].value)
+            self.assertAlmostEqual(saved["喝水量(杯)"]["A2"].value, 1 / 3)
+            self.assertEqual(saved["喝水量(杯)"]["A3"].value, 2)
+            self.assertNotIn(date(2026, 1, 1), [self._as_date(cell.value) for row in saved["清潔"].iter_rows() for cell in row])
+            saved.close()
 
 
 class ConditionSheetTests(unittest.TestCase):
@@ -657,7 +796,24 @@ class PageImageTests(unittest.TestCase):
         self.assertEqual(second, [["2026-10-16", "沒有: Tidak", "沒有: Tidak", "沒有: Tidak"]])
         self.assertNotIn("不該讀", str(second))
 
-    def test_files_stack_in_date_order_and_second_diet_table(self):
+        # Template rows keep a calculated 00:00:00 in the stop column. '?' in column A ends the page.
+        sleep = [
+            [None, None, "日期", None, "開始時間", None, "結束時間", None, "睡眠時間"],
+            ["半夜: Kerja malam", None, date(2026, 11, 7), None, "19:10:00", None, "19:55:00", None, "00:45:00"],
+            ["半夜: Kerja malam", None, date(2026, 11, 7), None, "05:40:00", None, "07:00:00", None, "00:00:00"],
+            ["?", None, date(2026, 9, 17), None, "01:03", None, "01:03", None, "00:00:00"],
+            ["?", None, date(2026, 9, 17), None, "01:03", None, "01:03", None, "01:00:00"],
+        ]
+        _header, sleep_rows = app.extract_page_table(sleep, (3, 5, 7, 9), 9)
+        self.assertEqual(
+            sleep_rows,
+            [
+                ["2026-11-07", "19:10:00", "19:55:00", "00:45:00"],
+                ["2026-11-07", "05:40:00", "07:00:00", "00:00:00"],
+            ],
+        )
+
+    def test_files_stack_in_date_order_and_diet_table(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             self._save(root / "20261017.xlsx", date(2026, 10, 17), "晚餐食物: Makanan makan malam", "1/2")
@@ -666,13 +822,34 @@ class PageImageTests(unittest.TestCase):
             exercise = groups["運動"]["tables"][0]["rows"]
             self.assertEqual([row[0] for row in exercise], ["2026-10-16", "2026-10-17"])
             diet = groups["飲食"]["tables"]
-            self.assertEqual(len(diet), 2)
-            self.assertEqual(diet[0]["letters"], ["A", "E", "G"])
-            self.assertEqual(diet[0]["rows"][0][0], "早餐食物: Makanan sarapan")
-            self.assertEqual(diet[1]["letters"], ["C", "E", "G", "I"])
-            self.assertEqual(diet[1]["rows"][0][2], "1 1/4")
-            self.assertEqual(diet[1]["rows"][1][0], "麵: mi")
-            self.assertEqual(groups["睡眠"]["tables"][0]["letters"], ["C", "E", "G", "I"])
+            self.assertEqual(len(diet), 1)
+            self.assertFalse(diet[0]["show_letters"])
+            self.assertFalse(diet[0]["show_index"])
+            self.assertEqual(diet[0]["header"][0].split("\n")[0], "日期")
+            self.assertEqual(
+                [column.split("\n")[0] for column in diet[0]["header"][1:]],
+                [
+                    "早餐食物: Makanan sarapan",
+                    "晚餐食物: Makanan makan malam",
+                    "一天食物 Makanan untuk satu hari",
+                ],
+            )
+            self.assertEqual(
+                diet[0]["rows"],
+                [
+                    [
+                        "",
+                        "早餐食物: Makanan sarapan",
+                        "晚餐食物: Makanan makan malam",
+                        "一天食物 Makanan untuk satu hari",
+                    ],
+                    ["2026-10-16", "1 1/4", "", "1 1/4"],
+                    ["2026-10-17", "", "1/2", "1/2"],
+                ],
+            )
+            self.assertEqual(groups["睡眠"]["tables"][0]["letters"], ["C", "E", "G", "I", ""])
+            self.assertEqual(groups["睡眠"]["tables"][0]["header"][-1].split("\n")[0], "一天睡眠時間")
+            self.assertEqual(groups["睡眠"]["tables"][0]["rows"][0][-1], "00:01:01")
             self.assertEqual(
                 groups["排洩1"]["tables"][0]["rows"],
                 [
@@ -686,6 +863,200 @@ class PageImageTests(unittest.TestCase):
             self.assertEqual(groups["身體情況1"]["tables"][0]["letters"], ["A", "C", "E", "G"])
             self.assertEqual(groups["身體情況2"]["tables"][0]["rows"][0][1:], ["有: Ya", "普通: Normal"])
             self.assertNotIn("不該讀", str(groups["運動"]["tables"][0]["rows"]))
+
+    def test_diet_pivot_is_one_row_per_date(self):
+        table = {
+            "header": [
+                "飲食健康\nMakan sehat",
+                "日期\nTanggal",
+                "食物份量(碗)\nPorsi makanan (mangkuk)",
+            ],
+            "rows": [
+                ["晚餐食物: Makanan makan malam", "2026-11-05", "1 1/2"],
+                ["早餐食物: Makanan sarapan", "2026-11-05", "2"],
+                ["午餐食物: Makanan makan siang", "2026-11-05", "2"],
+                ["早餐食物: Makanan sarapan", "2026-11-06", "1 1/2"],
+                ["午餐食物: Makanan makan siang", "2026-11-06", "2"],
+                ["晚餐食物: Makanan makan malam", "2026-11-06", "2"],
+                ["早餐食物: Makanan sarapan", "2026-11-07", "1 1/2"],
+                ["午餐食物: Makanan makan siang", "2026-11-07", "1 1/2"],
+                ["晚餐食物: Makanan makan malam", "2026-11-07", "2"],
+            ],
+            "letters": ["A", "E", "G"],
+        }
+        app.pivot_diet_table(table)
+        self.assertEqual(
+            [column.split("\n")[0] for column in table["header"]],
+            [
+                "日期",
+                "早餐食物: Makanan sarapan",
+                "午餐食物: Makanan makan siang",
+                "晚餐食物: Makanan makan malam",
+                "一天食物 Makanan untuk satu hari",
+            ],
+        )
+        self.assertEqual(table["header"][1].split("\n")[1], "食物份量(碗) Porsi makanan (mangkuk)")
+        self.assertEqual(table["header"][-1].split("\n")[1], "食物份量(碗) Porsi makanan (mangkuk)")
+        self.assertEqual(
+            table["rows"],
+            [
+                [
+                    "",
+                    "早餐食物: Makanan sarapan",
+                    "午餐食物: Makanan makan siang",
+                    "晚餐食物: Makanan makan malam",
+                    "一天食物 Makanan untuk satu hari",
+                ],
+                ["2026-11-05", "2", "2", "1 1/2", "5 1/2"],
+                ["2026-11-06", "1 1/2", "2", "2", "5 1/2"],
+                ["2026-11-07", "1 1/2", "1 1/2", "2", "5"],
+            ],
+        )
+
+    def test_food_sheet_uses_extracted_diet_rows(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self._save(root / "20261017.xlsx", date(2026, 10, 17), "晚餐食物: Makanan makan malam", "1/2")
+            self._save(root / "20261016.xlsx", date(2026, 10, 16), "早餐食物: Makanan sarapan", "1 1/4")
+            book = Workbook()
+            book.active.title = "運動"
+            app.add_food_sheet(book, app.list_dated_workbooks(root))
+            self.assertEqual(book.sheetnames, ["運動", "食物"])
+            sheet = book["食物"]
+            self.assertEqual(sheet["A1"].value.split("\n")[0], "日期")
+            self.assertEqual(sheet["D1"].value.split("\n")[0], "一天食物 Makanan untuk satu hari")
+            self.assertEqual(sheet["B2"].value, "早餐食物: Makanan sarapan")
+            self.assertEqual(sheet["D2"].value, "一天食物 Makanan untuk satu hari")
+            self.assertEqual(sheet["A3"].value, "2026-10-16")
+            self.assertEqual(sheet["B3"].value, "1 1/4")
+            self.assertEqual(sheet["C3"].value, None)
+            self.assertEqual(sheet["D3"].value, "1 1/4")
+            self.assertEqual(sheet["A4"].value, "2026-10-17")
+            self.assertEqual(sheet["C4"].value, "1/2")
+            self.assertEqual(sheet["D4"].value, "1/2")
+            book.close()
+
+    def test_food_plot_reads_the_food_sheet(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self._save(root / "20261017.xlsx", date(2026, 10, 17), "晚餐食物: Makanan makan malam", "1/2")
+            self._save(root / "20261016.xlsx", date(2026, 10, 16), "早餐食物: Makanan sarapan", "1 1/4")
+            book = Workbook()
+            book.active.title = "運動"
+            app.add_food_sheet(book, app.list_dated_workbooks(root))
+            spec = app.food_plot_from_sheet(book)
+            book.close()
+            self.assertEqual(spec["title"], "食物-日期")
+            self.assertEqual(spec["xlabel"], "日期 Tanggal")
+            self.assertEqual(spec["ylabel"], "食物份量(碗)")
+            self.assertEqual(spec["categories"], ["2026-10-16", "2026-10-17"])
+            self.assertEqual(
+                spec["series"],
+                [
+                    ("早餐食物: Makanan sarapan", [1.25, None]),
+                    ("午餐食物: Makanan makan siang", [None, None]),
+                    ("晚餐食物: Makanan makan malam", [None, 0.5]),
+                    ("一天食物 Makanan untuk satu hari", [1.25, 0.5]),
+                ],
+            )
+
+    def test_sleep_page_adds_daily_total_on_the_first_row(self):
+        table = {
+            "letters": ["C", "E", "G", "I"],
+            "header": [
+                "日期\nTanggal",
+                "開始時間\nWaktu mulai",
+                "結束時間\nWaktu berakhir",
+                "睡眠時間\nWaktu berolahraga",
+            ],
+            "rows": [
+                ["2026-11-05", "20:30:00", "23:30:00", "03:00:00"],
+                ["2026-11-05", "23:30:00", "01:30:00", "02:00:00"],
+                ["2026-11-05", "01:40:00", "06:40:00", "05:00:00"],
+                ["2026-11-06", "20:00:00", "20:40:00", "00:40:00"],
+                ["2026-11-06", "21:10:00", "23:20:00", "02:10:00"],
+                ["2026-11-06", "23:30:00", "01:30:00", "02:00:00"],
+                ["2026-11-06", "01:45:00", "02:20:00", "00:35:00"],
+                ["2026-11-06", "02:45:00", "06:20:00", "03:35:00"],
+                ["2026-11-07", "19:10:00", "19:55:00", "00:45:00"],
+                ["2026-11-07", "20:00:00", "20:40:00", "00:40:00"],
+                ["2026-11-07", "21:10:00", "21:22:00", "00:12:00"],
+                ["2026-11-07", "21:32:00", "01:00:00", "03:28:00"],
+                ["2026-11-07", "01:10:00", "05:20:00", "04:10:00"],
+                ["2026-11-07", "05:40:00", "07:00:00", "01:20:00"],
+            ],
+        }
+        app.add_sleep_day_total(table)
+        self.assertEqual(table["header"][-1], "一天睡眠時間\nWaktu tidur per hari")
+        self.assertEqual(table["rows"][0][-1], "10:00:00")
+        self.assertEqual(table["rows"][1][-1], "")
+        self.assertEqual(table["rows"][2][-1], "")
+        self.assertEqual(table["rows"][3][-1], "09:00:00")
+        self.assertEqual(table["rows"][7][-1], "")
+        self.assertEqual(table["rows"][8][-1], "10:35:00")
+        self.assertEqual(table["rows"][13][-1], "")
+        self.assertEqual([row[3] for row in table["rows"][:3]], ["03:00:00", "02:00:00", "05:00:00"])
+
+    def test_exercise_page_adds_daily_distance_on_the_first_row(self):
+        table = {
+            "letters": ["C", "E", "K"],
+            "header": [
+                "運動日期\nTanggal Olahraga",
+                "開始時間\nWaktu mulai",
+                "運動距離\nJarak pergerakan",
+            ],
+            "rows": [
+                ["2026-11-05", "07:50:00", "15米: 15 meter"],
+                ["2026-11-05", "09:20:00", "15米: 15 meter"],
+                ["2026-11-05", "13:16:00", "15米: 15 meter"],
+                ["2026-11-05", "16:16:00", "15米: 15 meter"],
+                ["2026-11-06", "07:50:00", "15米: 15 meter"],
+                ["2026-11-06", "11:50:00", "15米: 15 meter"],
+                ["2026-11-06", "12:10:00", "15米: 15 meter"],
+                ["2026-11-06", "13:40:00", "15米: 15 meter"],
+                ["2026-11-06", "15:30:00", "15米: 15 meter"],
+                ["2026-11-07", "08:20:00", "15米: 15 meter"],
+                ["2026-11-07", "09:00:00", "15米: 15 meter"],
+                ["2026-11-07", "12:52:00", "15米: 15 meter"],
+                ["2026-11-07", "14:52:00", "15米: 15 meter"],
+                ["2026-11-07", "16:53:00", "15米: 15 meter"],
+                ["2026-11-07", "18:40:00", "15米: 15 meter"],
+            ],
+        }
+        app.add_exercise_day_total(table)
+        self.assertEqual(table["header"][-1], "一天運動距離\nJarak olahraga harian")
+        self.assertEqual(table["rows"][0][-1], "60米: 60 meter")
+        self.assertEqual(table["rows"][1][-1], "")
+        self.assertEqual(table["rows"][3][-1], "")
+        self.assertEqual(table["rows"][4][-1], "75米: 75 meter")
+        self.assertEqual(table["rows"][8][-1], "")
+        self.assertEqual(table["rows"][9][-1], "90米: 90 meter")
+        self.assertEqual(table["rows"][14][-1], "")
+        self.assertEqual(table["rows"][0][2], "15米: 15 meter")
+
+    def test_water_sheet_page_follows_diet(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            book = Workbook()
+            sheet = book.active
+            sheet.title = "喝水量"
+            sheet.append(["喝水", "喝水日期", "喝水時間", "喝水量(杯)"])
+            sheet.append(["喝水", date(2026, 11, 5), "20:00", 5.5])
+            sheet.append(["喝水", date(2026, 11, 6), "20:00", 5])
+            sheet.append(["喝水", date(2026, 11, 7), "20:00", 5.5])
+            path = root / "Extract.xlsx"
+            book.save(path)
+            book.close()
+            groups = [
+                {"stem": "飲食", "title": "飲食", "tables": []},
+                {"stem": "睡眠", "title": "睡眠", "tables": []},
+            ]
+            placed = app._insert_water_page(groups, path)
+            self.assertEqual([group["stem"] for group in placed], ["飲食", "喝水量", "睡眠"])
+            rows = placed[1]["tables"][0]["rows"]
+            self.assertEqual(rows[0], ["喝水", "2026-11-05", "20:00", "5.50"])
+            self.assertEqual(rows[1][3], "5.00")
+            self.assertEqual(rows[2], ["喝水", "2026-11-07", "20:00", "5.50"])
 
     def test_pack_splits_when_the_next_row_does_not_fit(self):
         block = {"letter_h": 26, "header_h": 52, "row_heights": [33] * 5}

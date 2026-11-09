@@ -7,6 +7,7 @@ is "?". Output is written to an "output" folder inside the selected folder.
 from __future__ import annotations
 
 import datetime as dt
+from fractions import Fraction
 import html
 import math
 import os
@@ -438,14 +439,20 @@ def extract_sleep(path: Path, worksheet, cached=None) -> dict | None:
 
 
 def parse_cups(value) -> float | None:
-    """Parse a cup amount. '1/6' is one sixth of a cup. '?' is skipped."""
+    """Parse a cup amount. '1/6' is one sixth of a cup. '5 1/2' is five and a half. '?' is skipped."""
     if isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
         return float(value)
     if is_missing(value):
         return None
-    text = str(value).strip()
+    text = str(value).strip().replace("／", "/").replace("⁄", "/")
+    mixed = re.match(r"^(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s*/\s*(\d+(?:\.\d+)?)", text)
+    if mixed:
+        whole, numerator, denominator = (float(part) for part in mixed.groups())
+        if denominator == 0:
+            return None
+        return whole + numerator / denominator
     fraction = CUP_FRACTION_RE.search(text)
     if fraction:
         denominator = float(fraction.group(2))
@@ -462,14 +469,30 @@ def format_hhmm(value) -> str | None:
     return text[:5]
 
 
+def _water_columns(header: list) -> tuple[int, int, int]:
+    """清潔日期, 清潔時間, 喝水量(杯). Fall back to C, E, G when the titles are absent."""
+    date_col = _column_for_title(header, "清潔日期 Tanggal pembersihan")
+    time_col = _column_for_title(header, "清潔時間 Waktu bersih-bersih")
+    cup_col = _column_for_title(header, "喝水量(杯) Asupan air (cangkir)")
+    if date_col is None and time_col is None and cup_col is None:
+        return 3, 5, 7
+    return date_col or 3, time_col or 5, cup_col or 7
+
+
 def extract_water(path: Path, worksheet, cached=None) -> dict | None:
-    """Rows on 清潔 up to '?', mapped to 喝水 / 喝水日期 / 喝水時間 / 喝水量(杯)."""
-    _header, rows = load_table(worksheet, 7, cached)
+    """Rows on 清潔 above the first blank or '?' cup.
+
+    喝水日期 is 清潔日期, 喝水時間 is 清潔時間, and 喝水量(杯) is the cup column.
+    Template rows under a blank cup are left out. A missing date uses the file date.
+    """
+    values_rows = _read_sheet_values(worksheet, cached, 11)
+    header = values_rows[0] if values_rows else []
+    date_col, time_col, cup_col = _water_columns(header)
     parsed = []
-    for row in rows:
-        cups = parse_cups(cell_at(row, 7))
-        when = parse_date(cell_at(row, 3)) or file_date(path)
-        clock = format_hhmm(cell_at(row, 5))
+    for row in _rows_until_cup_stop(values_rows, cup_col):
+        cups = parse_cups(cell_at(row, cup_col))
+        when = parse_date(cell_at(row, date_col)) or file_date(path)
+        clock = format_hhmm(cell_at(row, time_col))
         if when is None and clock is None and cups is None:
             continue
         parsed.append({"label": "喝水", "date": when, "time": clock, "cups": cups})
@@ -503,8 +526,22 @@ def read_water(path: Path) -> tuple[dict | None, list[str]]:
     return block, messages
 
 
+def water_points(blocks: list[dict]) -> list[tuple[str, float]]:
+    """One plot point per 喝水量 row, in the same order as the stacked sheet."""
+    points = []
+    for block in blocks:
+        for row in block["rows"]:
+            if row.get("cups") is None:
+                continue
+            label = date_label(row.get("date"), block["date_label"])
+            if row.get("time"):
+                label = f"{label} {row['time']}"
+            points.append((label, float(row["cups"])))
+    return points
+
+
 def add_water_sheets(workbook: Workbook, plots: list[dict], blocks: list[dict], style: PlotStyle) -> None:
-    """Add 喝水量 and 喝水量 Plot. Existing sheets are left as they are."""
+    """Add 喝水量 as one table and 喝水量 Plot for those rows. Existing sheets are left as they are."""
     if not blocks:
         return
     if workbook.sheetnames == ["Extract"]:
@@ -514,7 +551,7 @@ def add_water_sheets(workbook: Workbook, plots: list[dict], blocks: list[dict], 
         sheet = workbook.create_sheet("喝水量")
     write_record_sheet(
         sheet,
-        blocks,
+        _append_blocks(blocks),
         WATER_STRIDE,
         [(0, "label", "text"), (1, "date", "date"), (2, "time", "text"), (3, "cups", "decimal")],
     )
@@ -523,6 +560,7 @@ def add_water_sheets(workbook: Workbook, plots: list[dict], blocks: list[dict], 
     totals = daily_totals(blocks, "cups")
     counts = daily_counts(blocks, "cups")
     specs = [
+        ("喝水量-喝水日期", "喝水日期", "喝水量(杯)", *spread(water_points(blocks), "喝水量(杯)"), True),
         ("全部喝水量-日期", "日期", "全部喝水量", *spread(totals, "全部喝水量"), True),
         ("全部喝水量次數-日期", "日期", "全部喝水量次數", *spread(counts, "全部喝水量次數"), True),
     ]
@@ -534,6 +572,183 @@ def add_water_sheets(workbook: Workbook, plots: list[dict], blocks: list[dict], 
         add_line_chart(plot_sheet, anchors[anchor_index], title, xlabel, ylabel, categories, series, style, rotate)
         plots.append(plot_spec(title, xlabel, ylabel, categories, series, rotate))
         anchor_index += 1
+
+
+# Column titles on input sheet 清潔, or a sheet of that name, and the output sheet for each.
+# kind is how the value is read. write_kind is how write_record_sheet stores it.
+CLEAN_COPIES = (
+    ("清潔日期 Tanggal pembersihan", "清潔", "date", "date"),
+    ("清潔時間 Waktu bersih-bersih", "喝水時間", "time", "text"),
+    ("喝水量(杯) Asupan air (cangkir)", "喝水量(杯)", "cups", "decimal"),
+)
+
+
+def _flat_title(value) -> str:
+    """One line, with the line break between Chinese and Indonesian turned into a space."""
+    if value is None:
+        return ""
+    return " ".join(str(value).replace("\r\n", " ").replace("\n", " ").replace("\r", " ").split())
+
+
+def _column_for_title(header: list, title: str) -> int | None:
+    target = _flat_title(title)
+    for index, value in enumerate(header, start=1):
+        if _flat_title(value) == target:
+            return index
+    return None
+
+
+def _sheet_for_title(workbook, title: str):
+    target = _flat_title(title)
+    for name in workbook.sheetnames:
+        if _flat_title(name) == target:
+            return workbook[name]
+    return None
+
+
+def _copy_value(value, kind: str):
+    if kind == "date":
+        return parse_date(value)
+    if kind == "time":
+        return format_hhmm(value)
+    if kind == "cups":
+        return parse_cups(value)
+    return None
+
+
+def _copy_block(path: Path, title: str, kind: str, values: list) -> dict | None:
+    parsed = [_copy_value(value, kind) for value in values]
+    if not any(value is not None for value in parsed):
+        return None
+    return _record_block(path, [{"value": value} for value in parsed], [_flat_title(title)])
+
+
+def _rows_until_cup_stop(values_rows: list[list], stop_column: int) -> list[list]:
+    """Data rows above the first '?' or blank cup cell. A '?' in column A also stops."""
+    kept = []
+    for index, values in enumerate(values_rows, start=1):
+        if index == 1:
+            continue
+        if is_question(cell_at(values, 1)):
+            break
+        if _page_cell_stops(cell_at(values, stop_column)):
+            break
+        kept.append(values)
+    return kept
+
+
+def _column_a_values(worksheet, cached) -> list:
+    """Column A below the header, above the first '?' or blank cell."""
+    values_rows = _read_sheet_values(worksheet, cached, 1)
+    values = []
+    for index, row in enumerate(values_rows, start=1):
+        if index == 1:
+            continue
+        cell = cell_at(row, 1)
+        if _page_cell_stops(cell):
+            break
+        values.append(cell)
+    return values
+
+
+def read_clean_copies(path: Path) -> tuple[dict | None, dict | None, dict | None, list[str]]:
+    """Copy 清潔日期, 清潔時間, and 喝水量(杯) into three blocks.
+
+    A sheet whose name is the column title is copied from column A.
+    Otherwise the matching column on sheet 清潔 is copied. Those three columns
+    share one row window: the rows above the first '?' or blank cup cell.
+    When 清潔 has no such titles, columns C, E, and G are used.
+    """
+    messages = []
+    workbook = load_workbook(path, data_only=False, read_only=True)
+    cached_book = load_workbook(path, data_only=True, read_only=True)
+    try:
+        blocks: list[dict | None] = [None, None, None]
+        named = []
+        for spec in CLEAN_COPIES:
+            sheet = _sheet_for_title(workbook, spec[0])
+            cached = None
+            if sheet is not None and sheet.title in cached_book.sheetnames:
+                cached = cached_book[sheet.title]
+            named.append((sheet, cached))
+
+        value_rows: list[list] = []
+        columns: list[int | None] = [None, None, None]
+        if "清潔" in workbook.sheetnames:
+            cached = cached_book["清潔"] if "清潔" in cached_book.sheetnames else None
+            values_rows = _read_sheet_values(workbook["清潔"], cached, 11)
+            header = values_rows[0] if values_rows else []
+            columns = [_column_for_title(header, spec[0]) for spec in CLEAN_COPIES]
+            if not any(column is not None for column in columns):
+                columns = [3, 5, 7]
+            stop_column = columns[2]
+            if stop_column is not None:
+                value_rows = _rows_until_cup_stop(values_rows, stop_column)
+
+        seen = "清潔" in workbook.sheetnames or any(sheet is not None for sheet, _cached in named)
+        for index, spec in enumerate(CLEAN_COPIES):
+            title, _sheet_name, kind, _write_kind = spec
+            sheet, cached = named[index]
+            if sheet is not None:
+                blocks[index] = _copy_block(path, title, kind, _column_a_values(sheet, cached))
+                continue
+            column = columns[index]
+            if column is None:
+                continue
+            blocks[index] = _copy_block(
+                path,
+                title,
+                kind,
+                [cell_at(row, column) for row in value_rows],
+            )
+        if not seen:
+            messages.append(f"{path.name}: sheet 清潔 not found, skipped")
+        else:
+            messages.append(
+                f"{path.name}: 清潔 {0 if blocks[0] is None else len(blocks[0]['rows'])}, "
+                f"喝水時間 {0 if blocks[1] is None else len(blocks[1]['rows'])}, "
+                f"喝水量(杯) {0 if blocks[2] is None else len(blocks[2]['rows'])}"
+            )
+    finally:
+        workbook.close()
+        cached_book.close()
+    return blocks[0], blocks[1], blocks[2], messages
+
+
+def _append_blocks(blocks: list[dict]) -> list[dict]:
+    """Stack every file's rows in the order the files were read."""
+    if not blocks:
+        return []
+    rows = []
+    for block in blocks:
+        rows.extend(block["rows"])
+    first = blocks[0]
+    return [{
+        "legend": first["legend"],
+        "date_label": first["date_label"],
+        "headers": first["headers"],
+        "rows": rows,
+    }]
+
+
+def add_clean_copy_sheets(
+    workbook: Workbook,
+    dates: list[dict],
+    times: list[dict],
+    cups: list[dict],
+) -> None:
+    """Add 清潔, 喝水時間, and 喝水量(杯). Later files are appended under the first. No plot."""
+    fields = (
+        ("清潔", dates, "date"),
+        ("喝水時間", times, "text"),
+        ("喝水量(杯)", cups, "decimal"),
+    )
+    for name, blocks, kind in fields:
+        stacked = _append_blocks(blocks)
+        if not stacked:
+            continue
+        sheet = _take_output_sheet(workbook, name)
+        write_record_sheet(sheet, stacked, 1, [(0, "value", kind)])
 
 
 def plain_text(value) -> str | None:
@@ -1195,18 +1410,23 @@ def process_folder(folder, style: PlotStyle | None = None, output_dir=None) -> P
     water: list[dict] = []
     excretion: list[dict] = []
     body: list[dict] = []
+    clean_dates: list[dict] = []
+    clean_times: list[dict] = []
+    clean_cups: list[dict] = []
     messages = [f"Folder: {folder}", f"Files: {', '.join(path.name for path in files)}"]
     for path in files:
         try:
             one_exercise, one_bp, one_sleep, notes = read_workbook(path)
             one_water, water_notes = read_water(path)
             one_excretion, one_body, condition_notes = read_condition(path)
+            one_date, one_time, one_cups, copy_notes = read_clean_copies(path)
         except Exception as exc:
             messages.append(f"{path.name}: skipped ({exc})")
             continue
         messages.extend(notes)
         messages.extend(water_notes)
         messages.extend(condition_notes)
+        messages.extend(copy_notes)
         if one_exercise:
             exercise.append(one_exercise)
         if one_bp:
@@ -1219,8 +1439,14 @@ def process_folder(folder, style: PlotStyle | None = None, output_dir=None) -> P
             excretion.append(one_excretion)
         if one_body:
             body.append(one_body)
+        if one_date:
+            clean_dates.append(one_date)
+        if one_time:
+            clean_times.append(one_time)
+        if one_cups:
+            clean_cups.append(one_cups)
 
-    if not exercise and not bp and not sleep and not water and not excretion and not body:
+    if not exercise and not bp and not sleep and not water and not excretion and not body and not clean_dates and not clean_times and not clean_cups:
         raise ValueError("No 運動, 血壓, 睡眠, 喝水量, 排洩, or 身體情況 data was found before the '?' rows.")
 
     legend_for(exercise)
@@ -1232,6 +1458,8 @@ def process_folder(folder, style: PlotStyle | None = None, output_dir=None) -> P
     workbook, plots = build_workbook(exercise, bp, sleep, style)
     add_water_sheets(workbook, plots, water, style)
     add_condition_sheets(workbook, excretion, body)
+    add_clean_copy_sheets(workbook, clean_dates, clean_times, clean_cups)
+    add_food_sheet(workbook, files)
     destination = Path(output_dir) if output_dir else folder / "output"
     destination.mkdir(parents=True, exist_ok=True)
     excel_path = destination / "Extract.xlsx"
@@ -1244,6 +1472,9 @@ def process_folder(folder, style: PlotStyle | None = None, output_dir=None) -> P
         "運動時間 is minutes. 運動距離 is meters. 睡眠時間 is hours. 喝水量 is cups. "
         "Rows at and below '?' are omitted. Missing values are left blank and are not drawn."
     )
+    food_plot = food_plot_from_sheet(workbook)
+    if food_plot is not None:
+        plots.append(food_plot)
     write_plotly(plot_path, plots, style, intro)
     messages.append("運動時間 is stored in minutes. 運動距離 is stored in meters. 睡眠時間 is stored in hours. 喝水量 is stored in cups.")
     messages.append(f"Saved {excel_path}")
@@ -1282,12 +1513,12 @@ _PAGE_FONTS = (
 )
 
 # stem is the file name. title is the label drawn on the page.
-# parts are (sheet, excel columns). 飲食 is two tables on the same page series.
+# parts are (sheet, excel columns). 飲食 keeps columns A, E, and G only.
 # 睡眠 columns follow the sample page: 日期, 開始時間, 結束時間, 睡眠時間.
 PAGE_SPECS = (
     {"stem": "運動", "title": "運動", "parts": (("運動", (3, 5, 11)),)},
     {"stem": "清潔", "title": "清潔", "parts": (("清潔", (2, 4, 6)),)},
-    {"stem": "飲食", "title": "飲食", "parts": (("飲食", (1, 5, 7)), ("飲食", (3, 5, 7, 9)))},
+    {"stem": "飲食", "title": "飲食", "parts": (("飲食", (1, 5, 7)),)},
     {"stem": "睡眠", "title": "睡眠", "parts": (("睡眠", (3, 5, 7, 9)),)},
     {"stem": "排洩1", "title": "排洩", "parts": (("排洩", (1, 5, 7)),)},
     {"stem": "排洩2", "title": "排洩", "parts": (("排洩", (1, 9, 11, 13)),)},
@@ -1392,8 +1623,9 @@ def extract_page_table(
 ) -> tuple[list[str], list[list[str]]]:
     """Header and data cells above the first '?' or blank in stop_column.
 
-    Rows at and below that cell are left off the page, including later rows
-    that have values again.
+    A '?' in column A ends the page as well. Rows at and below that cell are
+    left off the page, including later rows that have values again. A calculated
+    duration such as 00:00:00 does not keep those rows.
     """
     header = [""] * len(columns)
     rows: list[list[str]] = []
@@ -1401,7 +1633,7 @@ def extract_page_table(
         if index == 1:
             header = [_page_header(cell_at(values, column)) for column in columns]
             continue
-        if _page_cell_stops(cell_at(values, stop_column)):
+        if is_question(cell_at(values, 1)) or _page_cell_stops(cell_at(values, stop_column)):
             break
         rows.append([_page_text(cell_at(values, column)) for column in columns])
     return header, rows
@@ -1456,10 +1688,326 @@ def collect_page_groups(files: list[Path]) -> list[dict]:
 
     result = []
     for group in grouped:
+        if group["stem"] == "飲食":
+            for table in group["tables"]:
+                pivot_diet_table(table)
+        if group["stem"] == "睡眠":
+            for table in group["tables"]:
+                add_sleep_day_total(table)
+        if group["stem"] == "運動":
+            for table in group["tables"]:
+                add_exercise_day_total(table)
         tables = [table for table in group["tables"] if table["rows"]]
         if tables:
             result.append({"stem": group["stem"], "title": group["title"], "tables": tables})
     return result
+
+
+def _sleep_seconds(value: str) -> int | None:
+    """Duration text such as 03:00:00 or 9:00, not a clock past midnight."""
+    match = re.fullmatch(r"(\d+):(\d{2})(?::(\d{2}))?", value.strip())
+    if not match:
+        return None
+    hour, minute, second = int(match.group(1)), int(match.group(2)), int(match.group(3) or 0)
+    if minute > 59 or second > 59:
+        return None
+    return hour * 3600 + minute * 60 + second
+
+
+def _format_hms(seconds: int) -> str:
+    hours, rem = divmod(seconds, 3600)
+    minutes, secs = divmod(rem, 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def add_sleep_day_total(table: dict) -> None:
+    """Add 一天睡眠時間 on the first row of each date. Later rows of that date stay blank.
+
+    The total is the sum of 睡眠時間 from the input rows, not from a page image.
+    """
+    rows = table.get("rows") or []
+    if not rows:
+        return
+    header = list(table.get("header") or [])
+    while len(header) < 4:
+        header.append("")
+    totals: dict[str, int] = {}
+    counted: dict[str, bool] = {}
+    for row in rows:
+        when = row[0].strip() if row and row[0] else ""
+        totals.setdefault(when, 0)
+        counted.setdefault(when, False)
+        seconds = _sleep_seconds(row[3] if len(row) > 3 and row[3] else "")
+        if seconds is None:
+            continue
+        totals[when] += seconds
+        counted[when] = True
+    seen: set[str] = set()
+    widened = []
+    for row in rows:
+        padded = list(row[:4]) + [""] * (4 - len(row))
+        when = padded[0].strip()
+        if when not in seen and counted.get(when):
+            padded.append(_format_hms(totals[when]))
+        else:
+            padded.append("")
+        seen.add(when)
+        widened.append(padded)
+    letters = list(table.get("letters") or ["C", "E", "G", "I"])
+    while len(letters) < 4:
+        letters.append("")
+    table["letters"] = letters[:4] + [""]
+    table["header"] = header[:4] + ["一天睡眠時間\nWaktu tidur per hari"]
+    table["rows"] = widened
+
+
+def _format_meters(meters: float) -> str:
+    number = as_number(meters)
+    return f"{number}米: {number} meter"
+
+
+def add_exercise_day_total(table: dict) -> None:
+    """Add 一天運動距離 on the first row of each date. Later rows of that date stay blank.
+
+    The total is the sum of 運動距離 from the input rows, not from a page image.
+    """
+    rows = table.get("rows") or []
+    if not rows:
+        return
+    header = list(table.get("header") or [])
+    while len(header) < 3:
+        header.append("")
+    totals: dict[str, float] = {}
+    counted: dict[str, bool] = {}
+    for row in rows:
+        when = row[0].strip() if row and row[0] else ""
+        totals.setdefault(when, 0.0)
+        counted.setdefault(when, False)
+        meters = parse_meters(row[2] if len(row) > 2 and row[2] else None)
+        if meters is None:
+            continue
+        totals[when] += meters
+        counted[when] = True
+    seen: set[str] = set()
+    widened = []
+    for row in rows:
+        padded = list(row[:3]) + [""] * (3 - len(row))
+        when = padded[0].strip()
+        if when not in seen and counted.get(when):
+            padded.append(_format_meters(totals[when]))
+        else:
+            padded.append("")
+        seen.add(when)
+        widened.append(padded)
+    letters = list(table.get("letters") or ["C", "E", "K"])
+    while len(letters) < 3:
+        letters.append("")
+    table["letters"] = letters[:3] + [""]
+    table["header"] = header[:3] + ["一天運動距離\nJarak olahraga harian"]
+    table["rows"] = widened
+
+
+def _diet_meal_order(meal: str, seen: dict[str, int]) -> tuple[int, int]:
+    if "早餐" in meal:
+        group = 0
+    elif "午餐" in meal:
+        group = 1
+    elif "晚餐" in meal:
+        group = 2
+    else:
+        group = 3
+    return group, seen[meal]
+
+
+def _one_line(value: str) -> str:
+    return " ".join(part.strip() for part in value.split("\n") if part.strip())
+
+
+DAY_FOOD = "一天食物 Makanan untuk satu hari"
+_MIXED_PORTION_RE = re.compile(r"^(\d+)\s+(\d+)\s*/\s*(\d+)$")
+_FRACTION_PORTION_RE = re.compile(r"^(\d+)\s*/\s*(\d+)$")
+_DECIMAL_PORTION_RE = re.compile(r"^(\d+(?:\.\d+)?)$")
+
+
+def _parse_portion(value: str) -> Fraction | None:
+    """Read a bowl amount such as '2', '1/2', or '1 1/2'."""
+    text = value.replace("／", "/").replace("⁄", "/").strip()
+    if not text:
+        return None
+    mixed = _MIXED_PORTION_RE.fullmatch(text)
+    if mixed:
+        whole, numerator, denominator = (int(part) for part in mixed.groups())
+        if denominator == 0:
+            return None
+        return Fraction(whole) + Fraction(numerator, denominator)
+    fraction = _FRACTION_PORTION_RE.fullmatch(text)
+    if fraction:
+        numerator, denominator = (int(part) for part in fraction.groups())
+        if denominator == 0:
+            return None
+        return Fraction(numerator, denominator)
+    number = _DECIMAL_PORTION_RE.fullmatch(text)
+    if number:
+        return Fraction(number.group(1))
+    return None
+
+
+def _format_portion(value: Fraction) -> str:
+    whole = value.numerator // value.denominator
+    rest = value - whole
+    if rest == 0:
+        return str(whole)
+    piece = f"{rest.numerator}/{rest.denominator}"
+    if whole:
+        return f"{whole} {piece}"
+    return piece
+
+
+def _portion_total(amounts: list[str]) -> str:
+    total = Fraction(0)
+    found = False
+    for amount in amounts:
+        for part in amount.split("\n"):
+            value = _parse_portion(part)
+            if value is None:
+                continue
+            total += value
+            found = True
+    if not found:
+        return ""
+    return _format_portion(total)
+
+
+def pivot_diet_table(table: dict) -> None:
+    """Turn 飲食 rows into one row per date. Meal names become the columns.
+
+    The source rows are 飲食健康, 日期, 食物份量. The page keeps the date header,
+    places each meal above that meal's portion, and adds the day's total.
+    """
+    header = table.get("header") or []
+    rows = table.get("rows") or []
+    if len(header) < 3 or not rows:
+        return
+    date_header = header[1]
+    portion_label = _one_line(header[2])
+    seen: dict[str, int] = {}
+    meals: list[str] = []
+    by_date: dict[str, dict[str, str]] = {}
+    order: list[str] = []
+    for row in rows:
+        meal = row[0].strip() if row and row[0] else ""
+        when = row[1].strip() if len(row) > 1 and row[1] else ""
+        amount = row[2].strip() if len(row) > 2 and row[2] else ""
+        if not when:
+            continue
+        if meal and meal not in seen:
+            seen[meal] = len(seen)
+            meals.append(meal)
+        if when not in by_date:
+            by_date[when] = {}
+            order.append(when)
+        if not meal:
+            continue
+        current = by_date[when].get(meal, "")
+        if not current:
+            by_date[when][meal] = amount
+        elif amount and amount not in current.split("\n"):
+            by_date[when][meal] = f"{current}\n{amount}"
+    if not meals:
+        return
+    meals.sort(key=lambda meal: _diet_meal_order(meal, seen))
+    labels = meals + [DAY_FOOD]
+    table["letters"] = [""] * (1 + len(labels))
+    table["show_letters"] = False
+    table["show_index"] = False
+    table["header"] = [date_header] + [
+        label if not portion_label else f"{label}\n{portion_label}" for label in labels
+    ]
+    table["rows"] = [[""] + labels]
+    for when in order:
+        amounts = [by_date[when].get(meal, "") for meal in meals]
+        table["rows"].append([when] + amounts + [_portion_total(amounts)])
+
+
+def add_food_sheet(workbook: Workbook, files: list[Path]) -> None:
+    """Add 食物 from the 飲食 rows already read out of the input workbooks."""
+    diet = None
+    for group in collect_page_groups(list(files)):
+        if group["stem"] == "飲食" and group["tables"]:
+            diet = group["tables"][0]
+            break
+    if not diet or not diet["rows"]:
+        return
+    _write_food_sheet(_take_output_sheet(workbook, "食物"), diet)
+
+
+def _write_food_sheet(worksheet: Worksheet, table: dict) -> None:
+    """One header row, the meal names, then one row per date including the daily total."""
+    worksheet.freeze_panes = "A3"
+    worksheet.row_dimensions[1].height = 36
+    header_font = Font(name=FONT_NAME, bold=True, color="FFFFFF", size=11)
+    fill = PatternFill("solid", fgColor=HEADER_COLORS[0])
+    body_font = Font(name=FONT_NAME, size=11)
+    for index, title in enumerate(table["header"], start=1):
+        cell = worksheet.cell(1, index, title)
+        cell.font = header_font
+        cell.fill = fill
+        cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
+        cell.border = THIN
+        width = sum(2 if ord(char) > 127 else 1 for char in _one_line(title)) + 2
+        worksheet.column_dimensions[get_column_letter(index)].width = min(max(width, 16), 42)
+    for row_offset, row in enumerate(table["rows"]):
+        excel_row = row_offset + 2
+        for index in range(len(table["header"])):
+            value = row[index] if index < len(row) and row[index] else None
+            cell = worksheet.cell(excel_row, index + 1, value)
+            cell.font = body_font
+            cell.border = THIN
+            cell.alignment = Alignment(vertical="center", wrap_text=True, horizontal="center")
+
+
+FOOD_PLOT_SERIES = (
+    "早餐食物: Makanan sarapan",
+    "午餐食物: Makanan makan siang",
+    "晚餐食物: Makanan makan malam",
+    "一天食物 Makanan untuk satu hari",
+)
+
+
+def food_plot_from_sheet(workbook: Workbook) -> dict | None:
+    """Line plot of the 食物 sheet: each meal and the daily total against 日期."""
+    if "食物" not in workbook.sheetnames:
+        return None
+    sheet = workbook["食物"]
+    header_row = next(sheet.iter_rows(min_row=1, max_row=1, values_only=True), None)
+    if not header_row:
+        return None
+    headers = ["" if value is None else str(value).split("\n")[0].strip() for value in header_row]
+    if not headers or not headers[0].startswith("日期"):
+        return None
+    column_of = {name: headers.index(name) if name in headers else None for name in FOOD_PLOT_SERIES}
+    categories: list[str] = []
+    values = {name: [] for name in FOOD_PLOT_SERIES}
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        when = row[0] if row else None
+        if when is None or str(when).strip() == "":
+            continue
+        categories.append(str(when).strip())
+        for name in FOOD_PLOT_SERIES:
+            column = column_of[name]
+            raw = None if column is None or column >= len(row) else row[column]
+            parsed = None if raw is None or str(raw).strip() == "" else _parse_portion(str(raw))
+            values[name].append(None if parsed is None else float(parsed))
+    if not categories:
+        return None
+    return plot_spec(
+        "食物-日期",
+        "日期 Tanggal",
+        "食物份量(碗)",
+        categories,
+        [(name, values[name]) for name in FOOD_PLOT_SERIES],
+        True,
+    )
 
 
 def pack_page_chunks(blocks: list[dict], body_height: int, gap: int = PAGE_GAP) -> list[list[dict]]:
@@ -1541,8 +2089,9 @@ def _column_widths(
     rows: list[list[str]],
     font: ImageFont.FreeTypeFont,
     letter_font: ImageFont.FreeTypeFont,
+    index_width: int = PAGE_INDEX_W,
 ) -> list[int]:
-    usable = PAGE_RIGHT - PAGE_LEFT - PAGE_INDEX_W
+    usable = PAGE_RIGHT - PAGE_LEFT - index_width
     prefs = []
     for index, letter in enumerate(letters):
         widest = draw.textlength(letter, font=letter_font)
@@ -1583,9 +2132,12 @@ def _column_widths(
 
 def _block_metrics(draw: ImageDraw.ImageDraw, table: dict, font: ImageFont.FreeTypeFont, letter_font: ImageFont.FreeTypeFont) -> dict:
     letters = table["letters"]
+    show_letters = table.get("show_letters", True)
+    show_index = table.get("show_index", True)
     header = list(table["header"]) + [""] * (len(letters) - len(table["header"]))
     rows = table["rows"]
-    widths = _column_widths(draw, letters, header, rows, font, letter_font)
+    index_width = PAGE_INDEX_W if show_index else 0
+    widths = _column_widths(draw, letters, header, rows, font, letter_font, index_width)
     inner = [max(width - 16, 8) for width in widths]
     header_lines = [_wrap_cell(draw, header[index], font, inner[index]) for index in range(len(letters))]
     wrapped_rows = []
@@ -1603,9 +2155,10 @@ def _block_metrics(draw: ImageDraw.ImageDraw, table: dict, font: ImageFont.FreeT
         "widths": widths,
         "header_lines": header_lines,
         "wrapped_rows": wrapped_rows,
-        "letter_h": PAGE_LETTER_H,
+        "letter_h": PAGE_LETTER_H if show_letters else 0,
         "header_h": header_h,
         "row_heights": row_heights,
+        "show_index": show_index,
     }
 
 
@@ -1641,7 +2194,9 @@ def _draw_table_chunk(
     widths = block["widths"]
     letter_h = block["letter_h"]
     header_h = block["header_h"]
-    xs = [PAGE_LEFT, PAGE_LEFT + PAGE_INDEX_W]
+    show_index = block.get("show_index", True)
+    index_w = PAGE_INDEX_W if show_index else 0
+    xs = [PAGE_LEFT, PAGE_LEFT + index_w]
     for width in widths:
         xs.append(xs[-1] + width)
     y_letter = top
@@ -1667,15 +2222,18 @@ def _draw_table_chunk(
     for y in (y_letter, y_header, y_data, *row_tops[1:]):
         draw.line([(xs[0], y), (xs[-1], y)], fill=PAGE_GRID)
 
-    for index, letter in enumerate(block["letters"]):
-        _draw_text_block(draw, (xs[index + 1], y_letter, xs[index + 2], y_header), [letter], letter_font, "center")
-    _draw_text_block(draw, (xs[0], y_header, xs[1], y_data), ["1"], font, "center")
+    if letter_h:
+        for index, letter in enumerate(block["letters"]):
+            _draw_text_block(draw, (xs[index + 1], y_letter, xs[index + 2], y_header), [letter], letter_font, "center")
+    if show_index:
+        _draw_text_block(draw, (xs[0], y_header, xs[1], y_data), ["1"], font, "center")
     for index, lines in enumerate(block["header_lines"]):
         _draw_text_block(draw, (xs[index + 1], y_header, xs[index + 2], y_data), lines, font, "left")
     for offset, lines_row in enumerate(block["wrapped_rows"][row_start:row_end]):
         y0 = row_tops[offset]
         y1 = row_tops[offset + 1]
-        _draw_text_block(draw, (xs[0], y0, xs[1], y1), [str(row_start + offset + 2)], font, "center")
+        if show_index:
+            _draw_text_block(draw, (xs[0], y0, xs[1], y1), [str(row_start + offset + 2)], font, "center")
         for index, lines in enumerate(lines_row):
             _draw_text_block(draw, (xs[index + 1], y0, xs[index + 2], y1), lines, font, "left")
     return bottom
@@ -1740,7 +2298,10 @@ def export_page_files(files: list[Path], destination: Path, pdf_stem: str) -> tu
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
     groups = collect_page_groups(list(files))
+    groups = _insert_water_page(groups, destination / f"{pdf_stem}.xlsx")
     _clear_page_pngs(destination)
+    for path in destination.glob("喝水量_*.png"):
+        path.unlink()
     notes = []
     images: list[Image.Image] = []
     if not groups:
@@ -1757,6 +2318,73 @@ def export_page_files(files: list[Path], destination: Path, pdf_stem: str) -> tu
     _write_pdf(pdf_path, images)
     notes.append(f"Saved {pdf_path}")
     return notes, pdf_path
+
+
+def _water_sheet_text(value, cups: bool) -> str:
+    if value is None:
+        return ""
+    if cups and isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value)):
+        return f"{float(value):.2f}"
+    return _page_text(value)
+
+
+def _water_page_group(excel_path: Path) -> dict | None:
+    """Read Extract.xlsx sheet 喝水量 into one landscape page table."""
+    if not excel_path.is_file():
+        return None
+    workbook = load_workbook(excel_path, data_only=True, read_only=True)
+    try:
+        if "喝水量" not in workbook.sheetnames:
+            return None
+        rows = list(workbook["喝水量"].iter_rows(values_only=True))
+    finally:
+        workbook.close()
+    if not rows:
+        return None
+    header = [_page_header(value) for value in rows[0]]
+    while header and not header[-1]:
+        header.pop()
+    if not any(header):
+        return None
+    cups_at = {index for index, title in enumerate(header) if "喝水量" in title}
+    data = []
+    for row in rows[1:]:
+        values = [
+            _water_sheet_text(row[index] if index < len(row) else None, index in cups_at)
+            for index in range(len(header))
+        ]
+        if any(values):
+            data.append(values)
+    if not data:
+        return None
+    return {
+        "stem": "喝水量",
+        "title": "喝水量",
+        "tables": [{
+            "letters": [""] * len(header),
+            "header": header,
+            "rows": data,
+            "show_letters": False,
+            "show_index": False,
+        }],
+    }
+
+
+def _insert_water_page(groups: list[dict], excel_path: Path) -> list[dict]:
+    """Place the 喝水量 page immediately after 飲食."""
+    water = _water_page_group(excel_path)
+    if water is None:
+        return groups
+    placed = []
+    inserted = False
+    for group in groups:
+        placed.append(group)
+        if group["stem"] == "飲食":
+            placed.append(water)
+            inserted = True
+    if not inserted:
+        placed.append(water)
+    return placed
 
 
 # Same receivers as readExcel.py "Gmail 傳送 Excel" in app7.

@@ -2347,4 +2347,72 @@ when click GUI "Gmail 傳送 Excel", use Gmail to send Extract.xlsx, Extract.pdf
 use GUI "Gmail 傳送 Excel" in C:\Users\User\Desktop\app7\readExcel.py for GUI "Gmail 傳送 Excel" in  C:\Users\User\Desktop\app8
 this users are defined is in C:\Users\User\Desktop\app7\readExcel.py
 do not change any other existed codes
+2. use the example files for code development is at folder "C:\Users\User\Downloads\test", there are 2 Excel files: 20261016.xlsx,20261017.xlsx
+
+1 there
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+modify codes in  processExcel.py 
+1. copy data in input excel file in sheet "清潔日期 Tanggal pembersihan",  and put in output excel file in sheet "清潔"
+2. copy data in input excel file in sheet "清潔時間 Waktu bersih-bersih",  and put in output excel file in sheet "喝水時間"
+3. copy data in input excel file in sheet "喝水量(杯) Asupan air (cangkir)",  and put in output excel file in sheet "喝水量(杯)"
+do not change any other existed codes
+
+
+do not out all rows data in any sheet to png file:
+the methods to determine the rows to output is based on
+0.1 the cell in row above character "?"
+0.2 the cell in row above empty ""
+
+do not change any other existed codes
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+all input excel files are located at C:\Users\User\Downloads\Data Nenek November
+there are files: 20261105.xlsx, 20261106.xlsx, 20261107.xlsx
+睡眠_24.png that have all data in column "睡眠時間 Waktu berolahragathe" in excel file 20261106.xlsx and create many 睡眠_xx.png, and very large Extract.pdf file
+
+do not out all rows data in any sheet to png file:
+the methods to determine the rows to output is based on
+0.1 the cell in row above character "?"
+0.2 the cell in row above empty ""
+
+20261105.xlsx and  20261107.xlsx do not have this problem. compare 20261106.xlsx to 20261105.xlsx and  20261107.xlsx and check the problem
+
+do not change any other existed codes
+
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+add codes in processExcel.py 
+insert a plot in  Extract_plots.html, plot the data in sheet "食物" in  Extract.xlsx
+plot data "早餐食物: Makanan sarapan", "午餐食物: Makanan makan siang", "晚餐食物: Makanan makan malam","一天食物 Makanan untuk satu hari" v.s. "日期 Tanggal"
+do not change any other existed codes
+
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+all input excel files are located at C:\Users\User\Downloads\Data Nenek November
+there are files: 20261105.xlsx, 20261106.xlsx, 20261107.xlsx
+
+wrong data in output file Extract.xlsx, sheet "喝水量"
+see sheet "喝水量(杯) Asupan air (cangkir)" in the input files in  20261105.xlsx, 20261106.xlsx, 20261107.xlsx
+do not change any other existed codes
+
+see image input.png and output.png
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+all input excel files are located at C:\Users\User\Downloads\Data Nenek November
+there are files: 20261105.xlsx, 20261106.xlsx, 20261107.xlsx
+insert  output excel file Extract.xlsx, sheet "喝水量" to  output pdf file Extract.pdf after data "飲食"
+see image from output excel file Extract.xlsx, sheet "喝水量"  and image from  output pdf file Extract.pdf
+do not change any other existed codes
+
+
+
+
+
+
+
 
